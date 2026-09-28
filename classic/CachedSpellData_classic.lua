@@ -9,9 +9,21 @@ local cache_timer_start = debugprofilestop();
 
 --All
 code.cache_spell_data(20580, "Shadowmeld");
+code.cache_spell_data(20594, "Stoneform");
+code.cache_spell_data(20589, "Escape Artist");
+code.cache_spell_data(20600, "Perception");
+code.cache_spell_data(20572, "Blood Fury");
+code.cache_spell_data(20549, "War Stomp");
+code.cache_spell_data(26297, "Berserking");
+code.cache_spell_data(7744, "Will of the Forsaken");
+code.cache_spell_data(20577, "Cannibalize");
+code.cache_spell_data(1259416, "Walk on Air");
+code.cache_spell_data(1259705, "Read Ley Line");
+code.cache_spell_data(1259686, "Skysight");
 
 
 --Druid
+code.cache_spell_data(1850, "Dash");
 code.cache_spell_data(22812, "Barkskin");
 
 code.cache_spell_data(99, "Demoralizing Roar");
@@ -80,6 +92,7 @@ code.cache_spell_data(13795, "Immolation Trap");
 
 
 --Mage
+code.cache_spell_data(1953, "Blink");
 code.cache_spell_data(2139, "Counterspell");
 
 code.cache_spell_data(168, "Frost Armor");
@@ -151,6 +164,7 @@ code.cache_spell_data(20166, "Seal of Wisdom");
 
 
 --Priest
+code.cache_spell_data(19236, "Desperate Prayer");
 code.cache_spell_data(588, "Inner Fire");
 code.cache_spell_data(1243, "Power Word: Fortitude");
 code.cache_spell_data(17, "Power Word: Shield");
@@ -163,6 +177,7 @@ code.cache_spell_data(1706, "Levitate");
 code.cache_spell_data(14752, "Divine Spirit");
 
 --Rogue
+code.cache_spell_data(2983, "Sprint");
 code.cache_spell_data(1842, "Disarm Trap");
 code.cache_spell_data(4086, "Evasion");
 code.cache_spell_data(1766, "Kick");
@@ -284,8 +299,11 @@ code.cache_spell_data(713, "Summon Incubus");
 code.cache_spell_data(712, "Summon Succubus");
 code.cache_spell_data(697, "Summon Voidwalker");
 code.cache_spell_data(1122, "Summon Infernal");
+code.cache_spell_data(19647, "Spell Lock");
 
 --Warrior
+code.cache_spell_data(72, "Shield Bash");
+code.cache_spell_data(6552, "Pummel");
 code.cache_spell_data(6673, "Battle Shout");
 code.cache_spell_data(403215, "Commanding Shout");
 

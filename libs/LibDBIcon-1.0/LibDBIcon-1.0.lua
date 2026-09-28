@@ -220,7 +220,7 @@ local function createButton(name, object, db)
 	button:SetFrameStrata("MEDIUM")
 	button:SetSize(31, 31)
 	button:SetFrameLevel(8)
-	button:RegisterForClicks("AnyUp")
+	button:RegisterForClicks("anyUp")
 	button:RegisterForDrag("LeftButton")
 	button:SetHighlightTexture(136477) --"Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
 	local overlay = button:CreateTexture(nil, "OVERLAY")

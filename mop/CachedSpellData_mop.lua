@@ -10,6 +10,20 @@ local cache_timer_start = debugprofilestop();
 
 --#region Racial
 code.cache_spell_data(58984, "Shadowmeld");
+code.cache_spell_data(20594, "Stoneform");
+code.cache_spell_data(20589, "Escape Artist");
+code.cache_spell_data(59752, "Every Man for Himself");
+code.cache_spell_data(28880, "Gift of the Naaru");
+code.cache_spell_data(68992, "Darkflight");
+code.cache_spell_data(20572, "Blood Fury");
+code.cache_spell_data(20549, "War Stomp");
+code.cache_spell_data(26297, "Berserking");
+code.cache_spell_data(7744, "Will of the Forsaken");
+code.cache_spell_data(20577, "Cannibalize");
+code.cache_spell_data(25046, "Arcane Torrent");
+code.cache_spell_data(69070, "Rocket Jump");
+code.cache_spell_data(69041, "Rocket Barrage");
+code.cache_spell_data(107079, "Quaking Palm");
 --endregion
 
 
@@ -73,6 +87,7 @@ code.cache_spell_data(19577, "Intimidation");
 code.cache_spell_data(136, "Mend Pet");
 code.cache_spell_data(982, "Revive Pet");
 code.cache_spell_data(1515, "Tame Beast");
+code.cache_spell_data(2974, "Wing Clip");
 
 code.cache_spell_data(19883, "Track Humanoids");
 code.cache_spell_data(19884, "Track Undead");
@@ -91,6 +106,8 @@ code.cache_spell_data(34600, "Snake Trap");
 --#endregion
 
 --#region Mage
+code.cache_spell_data(1953, "Blink");
+code.cache_spell_data(2139, "Counterspell");
 code.cache_spell_data(7302, "Ice Armor");
 code.cache_spell_data(6117, "Mage Armor");
 code.cache_spell_data(30482, "Molten Armor");
@@ -100,11 +117,12 @@ code.cache_spell_data(11426, "Ice Barrier");
 code.cache_spell_data(1459, "Arcane Intellect");
 code.cache_spell_data(130, "Slow Fall");
 
-
+code.cache_spell_data(5504, "Conjure Water");
+code.cache_spell_data(587, "Conjure Food");
 
 code.cache_spell_data(759, "Conjure Mana Gem");
-code.cache_spell_data(42955, "Conjure Refreshment")
-code.cache_spell_data(43987, "Conjure Refreshment Table");
+
+code.cache_spell_data(43987, "Ritual of Refreshment");
 
 code.cache_spell_data(31687, "Summon Water Elemental");
 
@@ -147,11 +165,13 @@ code.cache_spell_data(132626, "Portal: Vale of Eternal Blossoms - Horde");
 --#endregion
 
 --#region Paladin
+code.cache_spell_data(96231, "Rebuke");
 code.cache_spell_data(498, "Divine Protection");
 code.cache_spell_data(642, "Divine Shield");
 
 code.cache_spell_data(19740, "Blessing of Might");
 code.cache_spell_data(20217, "Blessing of Kings");
+-- [MoP] removed: code.cache_spell_data(20911, "Blessing of Sanctuary");
 
 code.cache_spell_data(633, "Lay on Hands");
 
@@ -160,10 +180,18 @@ code.cache_spell_data(1022, "Hand of Protection");
 code.cache_spell_data(6940, "Hand of Sacrifice");
 code.cache_spell_data(1038, "Hand of Salvation");
 
-code.cache_spell_data(31821, "Devotion Aura");
+code.cache_spell_data(32223, "Crusader Aura");
+code.cache_spell_data(465, "Devotion Aura");
+-- [MoP] removed: code.cache_spell_data(7294, "Retribution Aura");
+-- [MoP] removed: code.cache_spell_data(19746, "Concentration Aura");
+-- [MoP] removed: code.cache_spell_data(19891, "Fire Resistance Aura");
 
+code.cache_spell_data(5502, "Sense Undead");
 
+-- [MoP] removed: code.cache_spell_data(20164, "Seal of Justice");
+-- [MoP] removed: code.cache_spell_data(20165, "Seal of Light");
 code.cache_spell_data(20154, "Seal of Righteousness");
+-- [MoP] removed: code.cache_spell_data(31801, "Seal of Vengeance");
 --#endregion
 
 --#region Priest
@@ -171,6 +199,7 @@ code.cache_spell_data(588, "Inner Fire");
 code.cache_spell_data(21562, "Prayer of Fortitude");
 code.cache_spell_data(17, "Power Word: Shield");
 code.cache_spell_data(15487, "Silence");
+-- [MoP] removed: code.cache_spell_data(27683, "Prayer of Shadow Protection");
 code.cache_spell_data(34433, "Shadowfiend");
 code.cache_spell_data(6346, "Fear Ward");
 code.cache_spell_data(15286, "Vampiric Embrace");
@@ -178,18 +207,17 @@ code.cache_spell_data(15286, "Vampiric Embrace");
 
 --#region Rogue
 code.cache_spell_data(1842, "Disarm Trap");
-code.cache_spell_data(5277, "Evasion");
+code.cache_spell_data(4086, "Evasion");
 code.cache_spell_data(1766, "Kick");
 code.cache_spell_data(1784, "Stealth");
 code.cache_spell_data(1856, "Vanish");
 code.cache_spell_data(2094, "Blind");
 code.cache_spell_data(6770, "Sap");
 code.cache_spell_data(36554, "Shadowstep");
-code.cache_spell_data(1804, "Pick Lock");
-
 --#endregion
 
 --#region Shaman
+code.cache_spell_data(57994, "Wind Shear");
 code.cache_spell_data(51730, "Earthliving Weapon");
 code.cache_spell_data(8024, "Flametongue Weapon");
 code.cache_spell_data(8033, "Frostbrand Weapon");
@@ -200,11 +228,16 @@ code.cache_spell_data(8042, "Earth Shock");
 
 --Air totems
 code.cache_spell_data(8177, "Grounding Totem");
+code.cache_spell_data(8512, "Windfury Totem");
+-- [MoP] removed: code.cache_spell_data(3738, "Wrath of Air Totem");
 
 
 --Earth totems
 code.cache_spell_data(2484, "Earthbind Totem");
 code.cache_spell_data(2062, "Earth Elemental Totem");
+code.cache_spell_data(5730, "Stoneclaw Totem");
+-- [MoP] removed: code.cache_spell_data(8071, "Stoneskin Totem");
+-- [MoP] removed: code.cache_spell_data(8075, "Strength of Earth Totem");
 code.cache_spell_data(8143, "Tremor Totem");
 
 --Fire totems
@@ -213,6 +246,7 @@ code.cache_spell_data(3599, "Searing Totem");
 
 --Water totems
 code.cache_spell_data(5394, "Healing Stream Totem");
+-- [MoP] removed: code.cache_spell_data(5675, "Mana Spring Totem");
 code.cache_spell_data(16190, "Mana Tide Totem");
 
 code.cache_spell_data(546, "Water Walking");
@@ -221,6 +255,8 @@ code.cache_spell_data(556, "Astral Recall");
 --#endregion
 
 --#region Warlock
+code.cache_spell_data(687, "Demon Skin");
+code.cache_spell_data(28176, "Fel Armor");
 
 code.cache_spell_data(6201, "Create Healthstone");
 
@@ -229,10 +265,12 @@ code.cache_spell_data(29893, "Ritual of Souls");
 
 code.cache_spell_data(6229, "Shadow Ward");
 
+code.cache_spell_data(1714, "Curse of Tongues");
+code.cache_spell_data(702, "Curse of Weakness");
 code.cache_spell_data(1490, "Curse of the Elements");
 code.cache_spell_data(18223, "Curse of Exhaustion");
 
-code.cache_spell_data(20707, "Soulstone");
+code.cache_spell_data(693, "Create Soulstone (Minor)");
 
 
 code.cache_spell_data(698, "Ritual of Summoning");
@@ -248,6 +286,7 @@ code.cache_spell_data(30146, "Summon Felguard");
 --#endregion
 
 --#region Warrior
+code.cache_spell_data(6552, "Pummel");
 code.cache_spell_data(6673, "Battle Shout");
 code.cache_spell_data(469, "Commanding Shout");
 code.cache_spell_data(100, "Charge");
@@ -261,6 +300,29 @@ code.cache_spell_data(2457, "Battle Stance");
 code.cache_spell_data(2458, "Berserker Stance");
 --#endregion
 
+--#region Monk
+code.cache_spell_data(109132, "Roll");
+code.cache_spell_data(115057, "Flying Serpent Kick");
+code.cache_spell_data(116841, "Tiger's Lust");
+code.cache_spell_data(122470, "Touch of Karma");
+code.cache_spell_data(115203, "Fortifying Brew");
+code.cache_spell_data(122783, "Diffuse Magic");
+code.cache_spell_data(122278, "Dampen Harm");
+code.cache_spell_data(116849, "Life Cocoon");
+code.cache_spell_data(116705, "Spear Hand Strike");
+code.cache_spell_data(119381, "Leg Sweep");
+code.cache_spell_data(115078, "Paralysis");
+code.cache_spell_data(116844, "Ring of Peace");
+code.cache_spell_data(126892, "Zen Pilgrimage");
+code.cache_spell_data(126895, "Zen Pilgrimage: Return");
+code.cache_spell_data(115921, "Legacy of the Emperor");
+code.cache_spell_data(116781, "Legacy of the White Tiger");
+code.cache_spell_data(115072, "Expel Harm");
+code.cache_spell_data(115450, "Detox");
+code.cache_spell_data(115178, "Resuscitate");
+code.cache_spell_data(115546, "Provoke");
+code.cache_spell_data(101546, "Spinning Crane Kick");
+--#endregion
 
 --#region Skills
 code.cache_spell_data(3273, "First Aid");

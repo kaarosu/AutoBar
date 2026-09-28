@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Spanish translation by shiftos & StiviS
@@ -256,6 +256,9 @@ if (GetLocale() == "esES") then
 		["AutoBarButtonWater"] = "Agua",
 		["AutoBarButtonWaterBuff"] = "Agua: Buff",
 
+		["AutoBarButtonShapeshift"] = "Cambio de forma",
+		["AutoBarButtonTotem"] = "Tótems",
+		["AutoBarButtonPortals"] = "Portales",
 		["AutoBarButtonBear"] = "Oso",
 		["AutoBarButtonBoomkinTree"] = "Arbol de Vida / Boomkin",
 		["AutoBarButtonCat"] = "Gato",

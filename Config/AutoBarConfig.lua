@@ -28,12 +28,12 @@ ABC.debug_frame_category = nil
 ABC.main_panel = CreateFrame( "Frame", "AutoBarConfig", UIParent );
 ABC.main_panel.name = "AutoBar";
 
-if InterfaceOptions_AddCategory then
-	InterfaceOptions_AddCategory(ABC.main_panel)
-else
+if _G.Settings and _G.Settings.RegisterCanvasLayoutCategory then
 	local layout
 	ABC.main_panel_category, layout = _G.Settings.RegisterCanvasLayoutCategory(ABC.main_panel, ABC.main_panel.name)
 	_G.Settings.RegisterAddOnCategory(ABC.main_panel_category)
+elseif InterfaceOptions_AddCategory then
+	InterfaceOptions_AddCategory(ABC.main_panel)
 end
 
 -- Categories panel
@@ -106,12 +106,12 @@ ABC.DebugFrame:SetName("Debug", "AutoBar")
 ABC.DebugFrame:SetLayout("Fill")
 
 
-if InterfaceOptions_AddCategory then
-	InterfaceOptions_AddCategory(ABC.DebugFrame.frame)
-else
+if _G.Settings and _G.Settings.RegisterCanvasLayoutSubcategory and ABC.main_panel_category then
 	local layout
 	ABC.debug_frame_category, layout = _G.Settings.RegisterCanvasLayoutSubcategory(ABC.main_panel_category, ABC.DebugFrame.frame, ABC.DebugFrame.frame.name)
 	_G.Settings.RegisterAddOnCategory(ABC.debug_frame_category)
+elseif InterfaceOptions_AddCategory then
+	InterfaceOptions_AddCategory(ABC.DebugFrame.frame)
 end
 
 --local function print_map_ids()

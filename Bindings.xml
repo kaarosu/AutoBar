@@ -22,6 +22,7 @@
 	<Binding name="AutoBarButtonCooldownPotionRejuvenation_X"	category="AutoBar "/>
 	<Binding name="AutoBarButtonCooldownStoneRejuvenation_X"		category="AutoBar "/>
 	<Binding name="AutoBarButtonCharge_X"						category="AutoBar " header="AutoBarClassBarExtras"/>
+	<Binding name="AutoBarButtonInterrupt_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonClassBuff_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonShields_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonClassPet_X"					category="AutoBar "/>
@@ -41,14 +42,17 @@
 	<Binding name="AutoBarButtonGarrison_X"					category="AutoBar "/>
 
 	<Binding name="AutoBarButtonDebuff_X"						category="AutoBar " header="AutoBarClassBarHeader"/>
-	<Binding name="AutoBarButtonBear_X"							category="AutoBar " header="AutoBarClassBarDruid"/>
+	<Binding name="AutoBarButtonShapeshift_X"					category="AutoBar " header="AutoBarClassBarDruid"/>
+	<Binding name="AutoBarButtonBear_X"							category="AutoBar "/>
 	<Binding name="AutoBarButtonCat_X"							category="AutoBar "/>
 	<Binding name="AutoBarButtonTravel_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonBoomkinTree_X"				category="AutoBar "/>
 	<Binding name="AutoBarButtonFoodPet_X"						category="AutoBar " header="AutoBarClassBarHunter"/>
 	<Binding name="AutoBarButtonTrap_X"							category="AutoBar "/>
+	<Binding name="AutoBarButtonPortals_X"						category="AutoBar " header="AutoBarClassBarMage"/>
 	<Binding name="AutoBarButtonPickLock_X"					category="AutoBar " header="AutoBarClassBarRogue"/>
-	<Binding name="AutoBarButtonTotemAir_X"					category="AutoBar " header="AutoBarClassBarShaman"/>
+	<Binding name="AutoBarButtonTotem_X"						category="AutoBar " header="AutoBarClassBarShaman"/>
+	<Binding name="AutoBarButtonTotemAir_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonTotemEarth_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonTotemFire_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonTotemWater_X"					category="AutoBar "/>

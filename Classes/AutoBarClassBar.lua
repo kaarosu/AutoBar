@@ -163,9 +163,9 @@ function Bar:CreateBarFrame()
 	AB.LibMMStickyFrames:RegisterFrame(self.frame)
 
 	self.elapsed = 0
-	if (self.sharedLayoutDB.fadeOut) then
+	self.frame:SetAlpha(self.sharedLayoutDB.alpha or 1)
+	if (self:IsFadeOut()) then
 		self:CreateFadeFrame()
-		self.fadeFrame:SetScript("OnUpdate", onUpdateFunc)
 	end
 
 	if (Masque) then
@@ -223,7 +223,6 @@ function Bar:UpdateObjects()
 		elseif (buttonDB.enabled) then
 			-- Recover from disabled cache
 			assert(buttonDB.buttonKey == buttonKey, "Bar:UpdateObjects mismatched keys")
-			if(AutoBar.Class[buttonDB.buttonClass] == nil) then print("AutoBar ", buttonDB.buttonClass, "is nil"); end;
 			if (AutoBar.buttonListDisabled[buttonKey]) then
 				AutoBar.buttonList[buttonKey] = AutoBar.buttonListDisabled[buttonKey]
 				AutoBar.buttonListDisabled[buttonKey] = nil
@@ -240,12 +239,17 @@ function Bar:UpdateObjects()
 				assert(buttonKeyIndex)
 				assert(buttonDB)
 				assert(buttonDB.buttonClass)
-				assert(AutoBar.Class[buttonDB.buttonClass], "AutoBar.Class[buttonDB.buttonClass]" .. " fails for " ..  buttonDB.buttonClass)
-				buttonList[buttonKeyIndex] = AutoBar.Class[buttonDB.buttonClass]:new(self, buttonDB)
-				AutoBar.buttonList[buttonKey] = buttonList[buttonKeyIndex]
-				if(debug) then code.log_warning("Bar:UpdateObjects new buttonKeyIndex " .. tostring(buttonKeyIndex) .. " buttonKey " .. tostring(buttonKey)) end
+				if (AutoBar.Class[buttonDB.buttonClass]) then
+					buttonList[buttonKeyIndex] = AutoBar.Class[buttonDB.buttonClass]:new(self, buttonDB)
+					AutoBar.buttonList[buttonKey] = buttonList[buttonKeyIndex]
+					if(debug) then code.log_warning("Bar:UpdateObjects new buttonKeyIndex " .. tostring(buttonKeyIndex) .. " buttonKey " .. tostring(buttonKey)) end
+				else
+					code.log_warning("AutoBar.Class[" .. tostring(buttonDB.buttonClass) .. "] not found for buttonKey " .. tostring(buttonKey))
+				end
 			end
-			buttonList[buttonKeyIndex].order = buttonKeyIndex
+			if (buttonList[buttonKeyIndex]) then
+				buttonList[buttonKeyIndex].order = buttonKeyIndex
+			end
 		else
 			if(debug) then code.log_warning("Bar:UpdateObjects Disabled " .. tostring(buttonKey) .. " --> buttonListDisabled ?") end
 			-- Move to disabled cache
@@ -258,9 +262,12 @@ function Bar:UpdateObjects()
 			elseif (AutoBar.buttonListDisabled[buttonKey]) then
 				buttonList[buttonKeyIndex] = AutoBar.buttonListDisabled[buttonKey]
 			else
-				assert(AutoBar.Class[buttonDB.buttonClass] ~= nil, buttonDB.buttonClass  .. " is nil")
-				buttonList[buttonKeyIndex] = AutoBar.Class[buttonDB.buttonClass]:new(self, buttonDB)
-				AutoBar.buttonListDisabled[buttonKey] = buttonList[buttonKeyIndex]
+				if (AutoBar.Class[buttonDB.buttonClass]) then
+					buttonList[buttonKeyIndex] = AutoBar.Class[buttonDB.buttonClass]:new(self, buttonDB)
+					AutoBar.buttonListDisabled[buttonKey] = buttonList[buttonKeyIndex]
+				else
+					code.log_warning("AutoBar.Class[" .. tostring(buttonDB.buttonClass) .. "] not found for disabled buttonKey " .. tostring(buttonKey))
+				end
 			end
 		end
 	end
@@ -351,24 +358,54 @@ end
 -- /script AutoBar.barList["AutoBarClassBarBasic"].activeButtonList[4].frame:SetChecked(1)
 
 
+function Bar:IsFadeOut()
+	return not not (self.sharedLayoutDB.fadeOut or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fade_out))
+end
+
+-- Returns true if the mouse cursor is currently over any visible button in this bar.
+-- The bar's driver frame has EnableMouse(false), so frame:IsMouseOver() is always false;
+-- we must check the individual mouse-enabled button frames instead.
+local function isMouseOverBar(self)
+	if (self.frame and self.frame:IsShown() and self.frame:IsMouseOver()) then
+		return true
+	end
+	for _, button in pairs(self.activeButtonList) do
+		if (button.frame and button.frame:IsShown() and button.frame:IsMouseOver()) then
+			return true
+		end
+	end
+	return false
+end
+
 function Bar:UpdateFadeOut()
---print("Bar:OnUpdate self.sharedLayoutDB.fadeOut " .. tostring(self.sharedLayoutDB.fadeOut))
-	if (self.sharedLayoutDB.fadeOut) then
-		local cancelFade = InCombatLockdown() and self.sharedLayoutDB.fadeOutCancelInCombat or self.frame:IsMouseOver() or IsShiftKeyDown() and self.sharedLayoutDB.fadeOutCancelOnShift or IsControlKeyDown() and self.sharedLayoutDB.fadeOutCancelOnCtrl or IsAltKeyDown() and self.sharedLayoutDB.fadeOutCancelOnAlt
+	if (self:IsFadeOut()) then
+		local cancelInCombat = (self.sharedLayoutDB.fadeOutCancelInCombat ~= nil) and self.sharedLayoutDB.fadeOutCancelInCombat or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutCancelInCombat)
+		local cancelOnShift = (self.sharedLayoutDB.fadeOutCancelOnShift ~= nil) and self.sharedLayoutDB.fadeOutCancelOnShift or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutCancelOnShift)
+		local cancelOnCtrl = (self.sharedLayoutDB.fadeOutCancelOnCtrl ~= nil) and self.sharedLayoutDB.fadeOutCancelOnCtrl or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutCancelOnCtrl)
+		local cancelOnAlt = (self.sharedLayoutDB.fadeOutCancelOnAlt ~= nil) and self.sharedLayoutDB.fadeOutCancelOnAlt or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutCancelOnAlt)
+		local fadeOutAlpha = self.sharedLayoutDB.fadeOutAlpha or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutAlpha) or 0
+		local fadeOutTime = self.sharedLayoutDB.fadeOutTime or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutTime) or 10
+		local fadeOutDelay = self.sharedLayoutDB.fadeOutDelay or (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.fadeOutDelay) or 0
+
+		local cancelFade = (InCombatLockdown() and cancelInCombat)
+			or isMouseOverBar(self)
+			or (IsShiftKeyDown() and cancelOnShift)
+			or (IsControlKeyDown() and cancelOnCtrl)
+			or (IsAltKeyDown() and cancelOnAlt)
 		for _, button in pairs(self.activeButtonList) do
---- ToDo: Verify
-			if (button.frame.popupHeader and button.frame.popupHeader:IsVisible()) then
+			-- A popup being open counts as hovering
+			if (button.frame and button.frame.popupHeader and button.frame.popupHeader:IsVisible()) then
 				cancelFade = true
+				break
 			end
 		end
 		if (cancelFade) then
-			self.frame:SetAlpha(self.sharedLayoutDB.alpha)
+			self.frame:SetAlpha(self.sharedLayoutDB.alpha or 1)
 			self.faded = nil
-			self.fadeOutDelay = self.sharedLayoutDB.fadeOutDelay
+			self.fadeOutDelay = fadeOutDelay
 		elseif (not self.faded) then
-			local startAlpha = self.sharedLayoutDB.alpha
-			local fadeOutAlpha = self.sharedLayoutDB.fadeOutAlpha or 0
-			local fadeOutChunks = (self.sharedLayoutDB.fadeOutTime or 10) / FADEOUT_UPDATE_TIME
+			local startAlpha = self.sharedLayoutDB.alpha or 1
+			local fadeOutChunks = fadeOutTime / FADEOUT_UPDATE_TIME
 			local decrement = (startAlpha - fadeOutAlpha) / fadeOutChunks
 			local alpha = self.frame:GetAlpha() - decrement
 			if (alpha < fadeOutAlpha) then
@@ -390,12 +427,14 @@ end
 function Bar:SetFadeOut(fadeOut)
 	self.sharedLayoutDB.fadeOut = fadeOut
 	self.faded = nil
-	if (fadeOut) then
+	if (self:IsFadeOut()) then
 		self:CreateFadeFrame()
-		self.fadeFrame:SetScript("OnUpdate", onUpdateFunc)
 	else
-		self.frame:SetAlpha(self.sharedLayoutDB.alpha)
-		self.fadeFrame:SetScript("OnUpdate", nil)
+		self.frame:SetAlpha(self.sharedLayoutDB.alpha or 1)
+		if (self.fadeFrame) then
+			self.fadeFrame:SetScript("OnUpdate", nil)
+			self.fadeFrame:Hide()
+		end
 	end
 end
 
@@ -417,8 +456,8 @@ function Bar:ColorBars()
 		self:SetButtonFrameStrata("LOW")
 
 		-- Cancel Fade
-		if self.sharedLayoutDB.fadeOut then
-			frame:SetAlpha(self.sharedLayoutDB.alpha)
+		if self:IsFadeOut() then
+			frame:SetAlpha(self.sharedLayoutDB.alpha or 1)
 			self.faded = nil
 		end
 
@@ -501,7 +540,9 @@ function Bar:CreateDragFrame()
 
 		frame.class = self
 		frame:EnableMouse(true)
-		code.RegisterForClicks(frame)
+		if (frame.SetMouseClickEnabled) then frame:SetMouseClickEnabled(true) end
+		if (frame.SetMouseMotionEnabled) then frame:SetMouseMotionEnabled(true) end
+		frame:RegisterForClicks("AnyUp", "AnyDown")
 		frame:RegisterForDrag("LeftButton", "RightButton")
 ---		frame:SetScript("OnReceiveDrag", onReceiveDragFunc)
 	end
@@ -511,13 +552,13 @@ end
 function Bar:CreateFadeFrame()
 	if (not self.fadeFrame) then
 		local name = self.barKey .. "FadeFrame"
-		local frame = CreateFrame("CheckButton", name, self.frame, "ActionButtonTemplate, SecureActionButtonTemplate")
-		code.ClearNormalTexture(frame)
+		local frame = CreateFrame("Frame", name, self.frame)
 		frame.class = self
 
 		self.fadeFrame = frame
-		self.fadeFrame:SetScript("OnUpdate", onUpdateFunc)
 	end
+	self.fadeFrame:Show()
+	self.fadeFrame:SetScript("OnUpdate", onUpdateFunc)
 end
 
 
@@ -749,8 +790,12 @@ end
 
 
 function Bar:RefreshAlpha()
+	local targetAlpha = self.sharedLayoutDB.alpha or 1
 	for _, button in pairs(self.buttonList) do
-		button.frame:SetAlpha(self.sharedLayoutDB.alpha or 1)
+		button.frame:SetAlpha(targetAlpha)
+	end
+	if (not self:IsFadeOut() or not self.faded) then
+		self.frame:SetAlpha(targetAlpha)
 	end
 end
 
@@ -838,13 +883,11 @@ end
 function Bar:DeleteButtonKey(barDBList, oldKey)
 	for _, barDB in pairs(barDBList) do
 		local buttonKeys = barDB.buttonKeys
-		for i, buttonKey in ipairs(buttonKeys) do
+		for _, buttonKey in ipairs(buttonKeys) do
 			if (buttonKey == oldKey) then
-				for index = i, #buttonKeys - 1, 1 do
+				for index = buttonKey, # buttonKeys - 1, 1 do
 					buttonKeys[index] = buttonKeys[index + 1]
 				end
-				buttonKeys[#buttonKeys] = nil
-				break
 			end
 		end
 	end

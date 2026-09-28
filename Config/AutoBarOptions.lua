@@ -90,13 +90,23 @@ local function LDBOnClick(_clickedFrame, button)
 			AceCfgDlg:Open("AutoBar")
 		end
 	elseif (button == "RightButton") then
+		if (InCombatLockdown()) then
+			if (UIErrorsFrame and ERR_NOT_IN_COMBAT) then
+				UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.1, 0.1, 1.0)
+			end
+			return
+		end
 		if InterfaceOptionsFrame_OpenToCategory then
 			InterfaceOptionsFrame_OpenToCategory("AutoBar")
 			InterfaceOptionsFrame_OpenToCategory("AutoBar")
 		else
 			local ABC = AB.AutoBarConfig
-			Settings.OpenToCategory(ABC.main_panel_category.ID)
-			--Settings.OpenToCategory(ABC.debug_frame_category.ID)
+			if (ABC and ABC.main_panel_category) then
+				local category_id = ABC.main_panel_category.GetID and ABC.main_panel_category:GetID() or ABC.main_panel_category.ID
+				if (category_id) then
+					Settings.OpenToCategory(category_id)
+				end
+			end
 		end
 	end
 end
@@ -169,6 +179,12 @@ end
 
 
 function AutoBar:OpenOptions()
+	if (InCombatLockdown()) then
+		if (UIErrorsFrame and ERR_NOT_IN_COMBAT) then
+			UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.1, 0.1, 1.0)
+		end
+		return
+	end
 	AutoBar:RefreshButtonDBList()
 	AutoBar:RefreshBarDBLists()
 	AutoBar:RemoveDuplicateButtons()
@@ -615,7 +631,7 @@ local function setCustomBarName(info, value)
 	if (value and value ~= "") then
 		local barKey = info.arg.barKey
 
-		if (not AB.bar:NameExists(value)) then
+		if (not Bar:NameExists(value)) then
 			local customBarDB = AutoBar.barLayoutDBList[barKey]
 			customBarDB.name = value
 
@@ -624,7 +640,7 @@ local function setCustomBarName(info, value)
 				bar:ChangeName(value)
 			end
 
-			AB.bar:Rename(barKey, value)
+			Bar:Rename(barKey, value)
 			AutoBar:BarsChanged()
 		end
 	end
@@ -995,7 +1011,7 @@ local function CategoryItemNew(info)
 	local categoryKey = info.arg.categoryKey
 	local itemsListDB = AutoBarDB2.custom_categories[categoryKey].items
 	local itemIndex = # itemsListDB + 1
-	itemsListDB[itemIndex] = { itemType = "item" }
+	itemsListDB[itemIndex] = {}
 	AutoBar:CategoriesChanged()
 end
 
@@ -1083,6 +1099,10 @@ local function setAutoBarValue(info, value)
 		for _barKey, bar in pairs(AutoBar.barList) do
 			bar.frame:SetClampedToScreen(value)
 		end
+	elseif setting_name == "fade_out" then
+		for _barKey, bar in pairs(AutoBar.barList) do
+			bar:SetFadeOut(bar.sharedLayoutDB.fadeOut)
+		end
 	end
 	AutoBarChanged()
 end
@@ -1154,6 +1174,13 @@ function AutoBar:CreateOptionsAce3()
 							name = L["Clamp Bars to screen"],
 							desc = L["Clamped Bars can not be positioned off screen"],
 						},
+						clamp_popups_to_screen = {
+							type = "toggle",
+							order = 162,
+							width = 1.2,
+							name = L["Clamp Popups to screen"],
+							desc = L["Adjust popup directions and column wrapping to keep popup buttons on screen"],
+						},
 						header2 = {
 							type = "header",
 							order = 300,
@@ -1207,6 +1234,15 @@ function AutoBar:CreateOptionsAce3()
 							desc = L["SelfCast using Right click"],
 							tristate = true,
 						},
+--						popupOnShift = {
+--							type = "toggle",
+--							order = 371,
+--							name = L["Popup on Shift Key"],
+--							desc = L["Popup while Shift key is pressed for %s"]:format(name),
+--							arg = passValue,
+--							tristate = true,
+--							--disabled = true,
+--						},
 						fadeOutSpacer = {
 							type = "header",
 							order = 400,
@@ -1217,6 +1253,7 @@ function AutoBar:CreateOptionsAce3()
 							order = 410,
 							name = L["FadeOut"],
 							desc = L["Fade out the Bar when not hovering over it."],
+							arg = passValue,
 							tristate = true,
 							disabled = getCombatLockdown,
 						},
@@ -1226,6 +1263,7 @@ function AutoBar:CreateOptionsAce3()
 							order = 412,
 							name = L["FadeOut Cancels in combat"],
 							desc = L["FadeOut is cancelled when entering combat."],
+							arg = passValue,
 							tristate = true,
 							disabled = getFadeOutDisabled,
 						},
@@ -1234,6 +1272,7 @@ function AutoBar:CreateOptionsAce3()
 							order = 413,
 							name = L["FadeOut Cancels on Shift"],
 							desc = L["FadeOut is cancelled when holding down the Shift key."],
+							arg = passValue,
 							tristate = true,
 							disabled = getFadeOutDisabled,
 						},
@@ -1242,6 +1281,7 @@ function AutoBar:CreateOptionsAce3()
 							order = 413,
 							name = L["FadeOut Cancels on Ctrl"],
 							desc = L["FadeOut is cancelled when holding down the Ctrl key."],
+							arg = passValue,
 							tristate = true,
 							disabled = getFadeOutDisabled,
 						},
@@ -1250,6 +1290,7 @@ function AutoBar:CreateOptionsAce3()
 							order = 413,
 							name = L["FadeOut Cancels on Alt"],
 							desc = L["FadeOut is cancelled when holding down the Alt key."],
+							arg = passValue,
 							tristate = true,
 							disabled = getFadeOutDisabled,
 						},
@@ -1259,6 +1300,7 @@ function AutoBar:CreateOptionsAce3()
 							name = L["FadeOut Time"],
 							desc = L["FadeOut takes this amount of time."],
 							min = 0, max = 10, step = 0.1, bigStep = 1,
+							arg = passValue,
 							disabled = getFadeOutDisabled,
 						},
 						fadeOutDelay = {
@@ -1267,6 +1309,7 @@ function AutoBar:CreateOptionsAce3()
 							name = L["FadeOut Delay"],
 							desc = L["FadeOut starts after this amount of time."],
 							min = 0, max = 10, step = 0.1, bigStep = 1,
+							arg = passValue,
 							disabled = getFadeOutDisabled,
 						},
 						fadeOutAlpha = {
@@ -1275,6 +1318,7 @@ function AutoBar:CreateOptionsAce3()
 							name = L["FadeOut Alpha"],
 							desc = L["FadeOut stops at this Alpha level."],
 							min = 0, max = 1, step = 0.01, bigStep = 0.05,
+							arg = passValue,
 							disabled = getFadeOutDisabled,
 						},
 						header_debug = {
@@ -1524,10 +1568,21 @@ local function getFadeOutAlpha(info)
 	return AutoBar.barLayoutDBList[barKey].fadeOutAlpha or 0
 end
 
+local function setFadeOutAlpha(info, value)
+	local barKey = info.arg.barKey
+	AutoBar.barLayoutDBList[barKey].fadeOutAlpha = value
+	AutoBarChanged()
+end
 
 local function getFadeOutTime(info)
 	local barKey = info.arg.barKey
 	return AutoBar.barLayoutDBList[barKey].fadeOutTime or 10
+end
+
+local function setFadeOutTime(info, value)
+	local barKey = info.arg.barKey
+	AutoBar.barLayoutDBList[barKey].fadeOutTime = value
+	AutoBarChanged()
 end
 
 
@@ -1734,6 +1789,7 @@ function AutoBar:CreateBarOptions(barKey, existingOptions)
 					desc = L["FadeOut takes this amount of time."],
 					min = 0, max = 10, step = 0.1, bigStep = 1,
 					get = getFadeOutTime,
+					set = setFadeOutTime,
 					arg = passValue,
 					disabled = getCombatLockdown,
 				},
@@ -1755,7 +1811,7 @@ function AutoBar:CreateBarOptions(barKey, existingOptions)
 					desc = L["FadeOut stops at this Alpha level."],
 					min = 0, max = 1, step = 0.01, bigStep = 0.05,
 					get = getFadeOutAlpha,
---					set = setFadeOutAlpha,
+					set = setFadeOutAlpha,
 					arg = passValue,
 					disabled = getCombatLockdown,
 				},
@@ -2413,9 +2469,7 @@ local function getCategoryItem(info)
 	local value
 	local itemType = itemDB.itemType
 	if (itemType == "item") then
-		if (itemDB.itemId) then
-			value = itemDB.value or ("item:" .. itemDB.itemId)
-		end
+		value = itemDB.value or ("item:" .. itemDB.itemId)
 	elseif (itemType == "spell") then
 		value = itemDB.value or itemDB.spellName
 	elseif (itemType == "macro") then
@@ -2454,7 +2508,7 @@ local function setCategoryItem(info, value, ...)
 		elseif (value:find("item:%d+")) then
 			itemDB.itemType = "item"
 			itemDB.value = value
-			itemDB.itemId = tonumber(value:match("item:(%d+)"))
+			itemDB.itemId = value:match("item:(%d+)")
 		elseif (strsub(value, 1, 6) == "macro:") then
 			itemDB.itemType = "macro"
 			itemDB.value = value
@@ -2462,8 +2516,6 @@ local function setCategoryItem(info, value, ...)
 		elseif (value ~= "") then
 			itemDB.itemType = "spell"
 			itemDB.value = value
-			itemDB.spellName = value
-			itemDB.spellClass = AutoBar.CLASS
 		end
 	end
 	AutoBar:CategoriesChanged()
@@ -2583,14 +2635,13 @@ function AutoBar:CreateCustomCategoryOptions(options)
 						type = "group",
 						name = L["Items"],
 						args = {
-							newCategoryItem = {
-							    type = "execute",
-								order = 0,
-							    name = L["New"],
-							    func = CategoryItemNew,
-								arg = passValue,
-								disabled = getCombatLockdown,
-							},
+--							newCategoryItem = {
+--							    type = "execute",
+--								order = 0,
+--							    name = L["New"],
+--							    func = CategoryItemNew,
+--								arg = passValue,
+--							},
 							newCategoryMacro = {
 							    type = "execute",
 								order = 1,

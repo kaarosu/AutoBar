@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Various Artists
@@ -258,6 +258,9 @@ if (GetLocale() == "zhTW") then
 		["AutoBarButtonWater"] = "水",
 		["AutoBarButtonWaterBuff"] = "水: 增益",
 
+		["AutoBarButtonShapeshift"] = "變形",
+		["AutoBarButtonTotem"] = "圖騰",
+		["AutoBarButtonPortals"] = "傳送門",
 		["AutoBarButtonBear"] = "熊",
 		["AutoBarButtonBoomkinTree"] = "生命之樹/梟獸",
 		["AutoBarButtonCat"] = "獵豹",

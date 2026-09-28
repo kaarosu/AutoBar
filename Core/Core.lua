@@ -69,14 +69,12 @@ AutoBar.frame:SetScript("OnEvent",
 	end)
 
 AutoBar.frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-AutoBar.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 
 
 -- Process a macro to determine what its "action" is:
 --		a spell
 --		an item
 function AB.GetActionForMacroBody(p_macro_body)
-	--local debug = false
 	local action
 	local tooltip
 	local icon
@@ -163,15 +161,20 @@ function AutoBar:InitializeZero()
 	AutoBar.frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 	AutoBar.frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 
-	local ok = pcall(AutoBar.frame.RegisterEvent, AutoBar.frame, "LEARNED_SPELL_IN_TAB")
-    if not ok then code.log_warning("Event does not exist:", "LEARNED_SPELL_IN_TAB") end
-    ok = pcall(AutoBar.frame.RegisterEvent, AutoBar.frame, "LEARNED_SPELL_IN_SKILL_LINE")
-    if not ok then code.log_warning("Event does not exist:", "LEARNED_SPELL_IN_SKILL_LINE") end
+	local function SafeRegisterEvent(frame, event)
+		if C_EventUtils and C_EventUtils.IsEventValid then
+			if C_EventUtils.IsEventValid(event) then
+				frame:RegisterEvent(event)
+			end
+		else
+			pcall(frame.RegisterEvent, frame, event)
+		end
+	end
 
-	ok = pcall(AutoBar.frame.RegisterEvent, AutoBar.frame, "COMPANION_LEARNED")
-	if not ok then code.log_warning("Event does not exist:", "COMPANION_LEARNED") end
-	ok = pcall(AutoBar.frame.RegisterEvent, AutoBar.frame, "NEW_MOUNT_ADDED")
-	if not ok then code.log_warning("Event does not exist:", "NEW_MOUNT_ADDED") end
+	SafeRegisterEvent(AutoBar.frame, "LEARNED_SPELL_IN_TAB")
+	SafeRegisterEvent(AutoBar.frame, "LEARNED_SPELL_IN_SKILL_LINE")
+	SafeRegisterEvent(AutoBar.frame, "COMPANION_LEARNED")
+	SafeRegisterEvent(AutoBar.frame, "NEW_MOUNT_ADDED")
 
 	if(AutoBarDB2.settings.handle_spell_changed) then
 		AutoBar.frame:RegisterEvent("SPELLS_CHANGED")
@@ -341,7 +344,7 @@ if (ABGData.is_mainline_wow) then
 
 		--Make sure we're in the world. Should always be the case, but stuff loads in odd orders
 		if(AutoBar.inWorld and AutoBarCategoryList["Dynamic.Quest"]) then
-			local num_entries, _num_quests = AB.GetNumQuestLogEntries()	--TODO: Remove this after Shadowlands and Classic no longer need the shim
+			local num_entries, _num_quests = AB.GetNumQuestLogEntries()
 			--code.log_warning(num_entries, " ",  _num_quests)
 			for i = 1, num_entries do
 				local link = GetQuestLogSpecialItemInfo(i)
@@ -383,8 +386,8 @@ AB.events.NEW_MOUNT_ADDED = AB.events.COMPANION_LEARNED
 
 
 local function register_sticky_frames()
-	--TODO: Review sticky frame handling. This code could be cleaned up
-	--TODO: Split this out to its own function
+	-- Registers known third-party and Blizzard frames so the sticky-frame lib
+	-- can snap AutoBar bars against them.
 	if (tick.OtherStickyFrames) then
 		for _index, stickyFrame in pairs(tick.OtherStickyFrames) do
 			if (_G[stickyFrame]) then
@@ -396,17 +399,7 @@ local function register_sticky_frames()
 
 end
 
-function AB.events.ZONE_CHANGED_NEW_AREA()
-	AB.LogEventStart("ZONE_CHANGED_NEW_AREA")
-	-- Toy usability can change between zones (e.g. Flight Master's Whistle).
-	-- Clear the cache so ScanRegisteredToys re-evaluates usability in the new zone.
-	AB.ResetToyUsableCache()
-	AB.ABScheduleUpdate(tick.UpdateItemsID)
-	AB.LogEventEnd("ZONE_CHANGED_NEW_AREA")
-end
-
 function AB.events.PLAYER_ENTERING_WORLD()
-	code.log_warning("* PLAYER_ENTERING_WORLD")
 
 --UIParentLoadAddOn("Blizzard_DebugTools")
 --UIParentLoadAddOn("Blizzard_EventTrace")
@@ -455,7 +448,7 @@ end
 function AB.events.BAG_UPDATE(p_bag_idx)
 	AB.LogEventStart("BAG_UPDATE")
 
-	if (AutoBar.inWorld and p_bag_idx <= ABGData.MAX_BAG_SLOTS) then
+	if (AutoBar.inWorld and p_bag_idx and p_bag_idx <= ABGData.MAX_BAG_SLOTS) then
 		AutoBarSearch:MarkBagDirty(p_bag_idx)
 	end
 
@@ -470,9 +463,8 @@ function AB.events.BAG_UPDATE_DELAYED()
 		for _button_name, button in pairs(AutoBar.buttonList) do
 			button:UpdateCount()
 		end
-	else
-		AB.ABScheduleUpdate(tick.UpdateItemsID)
 	end
+	AB.ABScheduleUpdate(tick.UpdateItemsID)
 
 	AB.LogEventEnd("BAG_UPDATE_DELAYED")
 
@@ -532,13 +524,9 @@ end
 
 function AB.events.ACTIONBAR_UPDATE_USABLE(p_arg1)
 	AB.LogEventStart("ACTIONBAR_UPDATE_USABLE")
-	if (InCombatLockdown()) then
-		if not usable_update_pending then
-			usable_update_pending = true
-			C_Timer.After(0.05, flush_usable_update)
-		end
-	else
-		AB.ABScheduleUpdate(tick.UpdateObjectsID)
+	if not usable_update_pending then
+		usable_update_pending = true
+		C_Timer.After(0.05, flush_usable_update)
 	end
 	AB.LogEventEnd("ACTIONBAR_UPDATE_USABLE", p_arg1)
 end
@@ -608,6 +596,14 @@ function AB.events.PLAYER_REGEN_ENABLED(p_arg1)
 	AB.LogEventStart("PLAYER_REGEN_ENABLED")
 
 	AutoBar.inCombat = nil
+
+	if (AB.update_deferred_for_combat or (tick.ScheduledUpdate and tick.ScheduledUpdate ~= tick.UpdateCompleteID)) then
+		AB.update_deferred_for_combat = false
+		if not ABSchedulerActive then
+			ABSchedulerActive = true
+			C_Timer.After(ABSchedulerTickLength, AutoBar.ABSchedulerTick)
+		end
+	end
 
 	AB.LogEventEnd("PLAYER_REGEN_ENABLED", p_arg1)
 end
@@ -685,23 +681,6 @@ function AB.events.UPDATE_BATTLEFIELD_STATUS()
 end
 
 
--- -- When dragging, contains { frameName, index }, otherwise nil
--- AutoBar.dragging = nil;
--- local draggingData = {};
-
--- function AutoBar.GetDraggingIndex(frameName)
--- 	if (AutoBar.dragging and AutoBar.dragging.frameName == frameName) then
--- 		return AutoBar.dragging.index;
--- 	end
--- 	return nil;
--- end
-
-
--- function AutoBar.SetDraggingIndex(frameName, index)
--- 	draggingData.frameName = frameName;
--- 	draggingData.index = index;
--- 	AutoBar.dragging = draggingData;
--- end
 
 
 function AB.ItemLinkDecode(link)
@@ -853,18 +832,15 @@ function AutoBar.OnClick(_self, _event, frame, button)
 end
 
 
---[[
-function AutoBar:OnStartFrameMoving()
---print("AutoBar.OnStartFrameMoving")
-end
-
---]]
 function AutoBar.OnStopFrameMoving(_self, _event, frame, point, stickToFrame, stickToPoint, stickToX, stickToY)
 	local bar = frame.class
 	if (bar and bar.sharedPositionDB) then
 --print("AutoBar:OnStopFrameMoving " .. tostring(bar.barName) .. " frame " .. tostring(frame) .. " point " .. tostring(point) .. " stickToFrame " .. tostring(stickToFrame) .. " stickToPoint " .. tostring(stickToPoint))
 		bar:StickTo(frame, point, stickToFrame, stickToPoint, stickToX, stickToY)
 		bar:PositionSave()
+		if (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.clamp_popups_to_screen and not InCombatLockdown() and bar.UpdateButtons) then
+			bar:UpdateButtons()
+		end
 	end
 end
 
@@ -874,6 +850,9 @@ function AutoBar.OnStickToFrame(_self, _event, frame, point, stickToFrame, stick
 	if (bar and bar.sharedPositionDB) then
 		bar:StickTo(frame, point, stickToFrame, stickToPoint, stickToX, stickToY)
 		bar:PositionSave()
+		if (AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.clamp_popups_to_screen and not InCombatLockdown() and bar.UpdateButtons) then
+			bar:UpdateButtons()
+		end
 	end
 end
 
@@ -941,13 +920,6 @@ function AutoBar:SetDraggingObject(fromObject)
 end
 
 
---/dump AutoBarDB2.account.barList["AutoBarClassBarBasic"].buttonKeys[16]
---/dump AutoBar.moveButtonsMode
---/script AutoBarDB2.settings.log_events = true
---/script AutoBarDB2.settings.log_events = false
---/script LibStub("LibKeyBound-1.0"):SetColorKeyBoundMode(0.75, 1, 0, 0.5)
---/script DEFAULT_CHAT_FRAME:AddMessage("" .. tostring())
---/print GetMouseFocus():GetName()
 
 
 local StupidLogEnabled = false
@@ -1001,17 +973,6 @@ function AutoBar:DebugItemCategory(p_category_name)
 
 end
 
---/dump LibStub("LibPeriodicTable-3.1"):GetSetTable("Muffin.Flask")
---/dump AutoBarCategoryList["Muffin.Flask"].castList
---/dump AutoBarCategoryList["Muffin.Flask"].items
---/dump /run AutoBar:DebugItemCategory("Muffin.Flask")
-
-
-
-
-
-
-
 
 
 
@@ -1034,6 +995,11 @@ function AB.ABScheduleUpdate(p_update_id)
 		tick.ScheduledUpdate = p_update_id;
 	end
 
+	if (AutoBar:IsInLockDown()) then
+		AB.update_deferred_for_combat = true
+		return
+	end
+
 	if not ABSchedulerActive then
 		C_Timer.After(ABSchedulerTickLength, AutoBar.ABSchedulerTick)
 		ABSchedulerActive = true
@@ -1051,9 +1017,10 @@ function AutoBar:ABSchedulerTick()
 		return;
 	end
 
-	--If we're in combat, catch it on the next tick so we don't cause a hitch in gameplay
+	--If we're in combat, defer until combat drops (PLAYER_REGEN_ENABLED) to eliminate timer spinning
 	if (AutoBar:IsInLockDown()) then
-		C_Timer.After(ABSchedulerTickLengthCombat, AutoBar.ABSchedulerTick)
+		ABSchedulerActive = false
+		AB.update_deferred_for_combat = true
 		return;
 	end
 

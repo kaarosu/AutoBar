@@ -10,6 +10,19 @@ local cache_timer_start = debugprofilestop();
 
 --#region Racial
 code.cache_spell_data(58984, "Shadowmeld");
+code.cache_spell_data(20594, "Stoneform");
+code.cache_spell_data(20589, "Escape Artist");
+code.cache_spell_data(59752, "Every Man for Himself");
+code.cache_spell_data(28880, "Gift of the Naaru");
+code.cache_spell_data(68992, "Darkflight");
+code.cache_spell_data(20572, "Blood Fury");
+code.cache_spell_data(20549, "War Stomp");
+code.cache_spell_data(26297, "Berserking");
+code.cache_spell_data(7744, "Will of the Forsaken");
+code.cache_spell_data(20577, "Cannibalize");
+code.cache_spell_data(25046, "Arcane Torrent");
+code.cache_spell_data(69070, "Rocket Jump");
+code.cache_spell_data(69041, "Rocket Barrage");
 --endregion
 
 
@@ -92,6 +105,8 @@ code.cache_spell_data(34600, "Snake Trap");
 --#endregion
 
 --#region Mage
+code.cache_spell_data(1953, "Blink");
+code.cache_spell_data(2139, "Counterspell");
 code.cache_spell_data(7302, "Ice Armor");
 code.cache_spell_data(6117, "Mage Armor");
 code.cache_spell_data(30482, "Molten Armor");
@@ -145,6 +160,7 @@ code.cache_spell_data(88346, "Portal: Tol Barad - Horde");
 --#endregion
 
 --#region Paladin
+code.cache_spell_data(96231, "Rebuke");
 code.cache_spell_data(498, "Divine Protection");
 code.cache_spell_data(642, "Divine Shield");
 
@@ -196,6 +212,7 @@ code.cache_spell_data(36554, "Shadowstep");
 --#endregion
 
 --#region Shaman
+code.cache_spell_data(57994, "Wind Shear");
 code.cache_spell_data(51730, "Earthliving Weapon");
 code.cache_spell_data(8024, "Flametongue Weapon");
 code.cache_spell_data(8033, "Frostbrand Weapon");
@@ -264,6 +281,7 @@ code.cache_spell_data(30146, "Summon Felguard");
 --#endregion
 
 --#region Warrior
+code.cache_spell_data(6552, "Pummel");
 code.cache_spell_data(6673, "Battle Shout");
 code.cache_spell_data(469, "Commanding Shout");
 code.cache_spell_data(100, "Charge");

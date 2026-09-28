@@ -7,18 +7,6 @@
 -- http://muffinmangames.com
 --
 
---	PeriodicGroup
---		description
---		texture
---		targeted
---		nonCombat
---		battleground
---		flying
-
---	AutoBar
---		spell
---		limit
-
 local _, AB = ...
 
 local types = AB.types	---@class ABTypes
@@ -27,7 +15,7 @@ local code = AB.code	---@class ABCode
 local AutoBar = AutoBar
 local ABGData = AutoBarGlobalDataObject
 
---TODO: Move AutoBarCategoryList into AutoBarGlobalDataObject
+-- AutoBarCategoryList is a module-level global; kept here for historical reasons.
 AutoBarCategoryList = {}
 
 local L = ABGData.locale
@@ -140,6 +128,12 @@ local function AddSpellToCategory(p_category, p_spell_name_left, spellNameRight,
 		else
 			spellNameLeft = p_spell_name_left
 		end
+		if (not left_spell_id and AutoBarGlobalDataObject.spell_id_list) then
+			left_spell_id = AutoBarGlobalDataObject.spell_id_list[p_spell_name_left]
+		end
+		if (not spellNameLeft) then
+			spellNameLeft = p_spell_name_left
+		end
 		if (not p_category.items) then
 			p_category.items = {}
 		end
@@ -147,6 +141,9 @@ local function AddSpellToCategory(p_category, p_spell_name_left, spellNameRight,
 	if (spellNameRight) then
 		if (not noSpellCheck) then
 			spellNameRight, _, _, _, _, _, right_spell_id  = AB.GetSpellInfo(spellNameRight)
+		end
+		if (not right_spell_id and AutoBarGlobalDataObject.spell_id_list) then
+			right_spell_id = AutoBarGlobalDataObject.spell_id_list[spellNameRight]
 		end
 		if (not p_category.itemsRightClick) then
 			p_category.itemsRightClick = {}
@@ -181,7 +178,7 @@ local function FilterByClass(castList, p_items_per_line)
 	local spellName, index, filteredList2, filteredList3
 	local items_per_line = p_items_per_line or 2
 
-	--TODO: verify that each entry starts with either a proper class name or a "*"
+	-- Each entry must start with a class name (e.g. "DRUID") or "*" for all classes.
 	-- Filter out CLASS spells from castList
 	index = 1
 	for i = 1, # castList, items_per_line do
@@ -227,6 +224,7 @@ end
 ---@field nonCombat boolean
 ---@field battleground boolean
 ---@field noSpellCheck boolean
+---@field first_to_last boolean|nil
 ---@field castSpell number	spell override
 ---@field items table
 ---@field itemsRightClick table|nil	right-click spell map, present only on categories that use it
@@ -309,7 +307,7 @@ function ItemsCategory:new(p_description, p_short_texture, p_pt_items, p_pt_prio
 	assert(type(p_description) == "string")
 	assert(type(p_short_texture) == "string")
 	assert(type(p_pt_items) == "string" or (p_pt_items == nil and p_description == "Dynamic.Quest"), "p_pt_items is a " .. type(p_pt_items) .. " " .. p_description)
-	--TODO: The above handling of dynamic categories is fugly
+	-- Dynamic.Quest has no PT set; items are added at runtime via QUEST_ACCEPTED.
 
 	local obj = CreateFromMixins(self)
 	obj:init(p_description, "Interface\\Icons\\" .. p_short_texture)
@@ -488,9 +486,7 @@ function CustomCategory:new(customCategoriesDB)
 		end
 	end
 	if (itemType == "item") then
-		if (itemId) then
-			texture = code.GetIconForItemID(tonumber(itemId))
-		end
+		texture = code.GetIconForItemID(tonumber(itemId))
 	elseif (itemType == "spell") then
 		if (spellName) then
 			texture = C_Spell.GetSpellTexture(spellName)
@@ -604,7 +600,7 @@ function AB.InitializeAllCategories()
 
 	AutoBarCategoryList["Macro.Raid Target"] = MacroTextCategory:new( "Raid Target", "Spell_BrokenHeart")
 	for index = 1, 8 do
-		AutoBarCategoryList["Macro.Raid Target"]:AddMacroText('/run SetRaidTarget("target", ' .. index .. ')',  "Interface/targetingframe/UI-RaidTargetingIcon_" .. index, L["Raid " .. index])
+		AutoBarCategoryList["Macro.Raid Target"]:AddMacroText('/tm ' .. index,  "Interface/targetingframe/UI-RaidTargetingIcon_" .. index, L["Raid " .. index])
 	end
 
 	AutoBarCategoryList["Battle Pet.Favourites"] = MacroTextCategory:new( "Battle Pet.Favourites", "inv_misc_pheonixpet_01")
@@ -666,9 +662,6 @@ function AB.InitializeAllCategories()
 	AutoBarCategoryList["Consumable.Food.Edible.Basic.Non-Conjured"] = ItemsCategory:new( "Consumable.Food.Edible.Basic.Non-Conjured", "INV_Misc_Food_23", "Consumable.Food.Edible.Basic.Non-Conjured")
 	AutoBarCategoryList["Consumable.Food.Edible.Basic.Non-Conjured"]:SetNonCombat(true)
 
-	--TODO:Was this intended to be Conjured instead of Non-Conjured?
-	--AutoBarCategoryList["Consumable.Food.Edible.Basic.Non-Conjured"] = ItemsCategory:new( "Consumable.Food.Edible.Basic.Non-Conjured", "INV_Misc_Food_23", "Consumable.Food.Edible.Basic.Non-Conjured")
-	--AutoBarCategoryList["Consumable.Food.Edible.Basic.Non-Conjured"]:SetNonCombat(true)
 
 	AutoBarCategoryList["Muffin.Food.Health.Basic"] = ItemsCategory:new( "Muffin.Food.Health.Basic", "INV_Misc_Food_23", "Muffin.Food.Health.Basic")
 	AutoBarCategoryList["Muffin.Food.Health.Basic"]:SetNonCombat(true)

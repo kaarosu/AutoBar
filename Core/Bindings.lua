@@ -1,3 +1,4 @@
+	if (not AutoBarGlobalDataObject) then return end
 	local L = AutoBarGlobalDataObject.locale
 
 	BINDING_HEADER_AUTOBAR_SEP = "AutoBar";
@@ -19,6 +20,7 @@
 
 	BINDING_HEADER_AutoBarClassBarExtras = L["AutoBarClassBarExtras"]
 	BINDING_NAME_AutoBarButtonCharge_X = L["AutoBarButtonCharge"]
+	BINDING_NAME_AutoBarButtonInterrupt_X = L["AutoBarButtonInterrupt"]
 	BINDING_NAME_AutoBarButtonClassBuff_X = L["AutoBarButtonClassBuff"]
 	BINDING_NAME_AutoBarButtonShields_X = L["AutoBarButtonShields"]
 	BINDING_NAME_AutoBarButtonClassPet_X = L["AutoBarButtonClassPet"]
@@ -60,6 +62,7 @@
 	BINDING_HEADER_AutoBarClassBarDemonHunter = L["AutoBarClassBarDemonHunter"]
 
 	BINDING_HEADER_AutoBarClassBarDruid = L["AutoBarClassBarDruid"]
+	BINDING_NAME_AutoBarButtonShapeshift_X = L["AutoBarButtonShapeshift"]
 	BINDING_NAME_AutoBarButtonBear_X = L["AutoBarButtonBear"]
 	BINDING_NAME_AutoBarButtonBoomkinTree_X = L["AutoBarButtonBoomkinTree"]
 	BINDING_NAME_AutoBarButtonCat_X = L["AutoBarButtonCat"]
@@ -70,6 +73,7 @@
 	BINDING_NAME_AutoBarButtonTrap_X = L["AutoBarButtonTrap"]
 
 	BINDING_HEADER_AutoBarClassBarMage = L["AutoBarClassBarMage"]
+	BINDING_NAME_AutoBarButtonPortals_X = L["AutoBarButtonPortals"]
 
 	BINDING_HEADER_AutoBarClassBarPaladin = L["AutoBarClassBarPaladin"]
 
@@ -79,6 +83,7 @@
 	BINDING_NAME_AutoBarButtonPickLock_X = L["AutoBarButtonPickLock"]
 
 	BINDING_HEADER_AutoBarClassBarShaman = L["AutoBarClassBarShaman"]
+	BINDING_NAME_AutoBarButtonTotem_X = L["AutoBarButtonTotem"]
 	BINDING_NAME_AutoBarButtonTotemAir_X = L["AutoBarButtonTotemAir"]
 	BINDING_NAME_AutoBarButtonTotemEarth_X = L["AutoBarButtonTotemEarth"]
 	BINDING_NAME_AutoBarButtonTotemFire_X = L["AutoBarButtonTotemFire"]

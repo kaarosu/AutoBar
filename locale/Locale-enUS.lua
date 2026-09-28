@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Various Artists
@@ -34,6 +34,8 @@ if (GetLocale() == "enUS") then
 		["Categories for %s"] = "Categories for %s",
 		["Clamp Bars to screen"] = "Clamp Bars to screen",
 		["Clamped Bars can not be positioned off screen"] = "Clamped Bars can not be positioned off screen",
+		["Clamp Popups to screen"] = "Clamp Popups to screen",
+		["Adjust popup directions and column wrapping to keep popup buttons on screen"] = "Adjust popup directions and column wrapping to keep popup buttons on screen",
 		["Collapse Buttons"] = "Collapse Buttons",
 		["Collapse Buttons that have nothing in them."] = "Collapse Buttons that have nothing in them.",
 		["Configuration for %s"] = "Configuration for %s",
@@ -220,7 +222,9 @@ if (GetLocale() == "enUS") then
 		["AutoBarButtonPets"] = "Pets",
 		["AutoBarButtonQuest"] = "Quest",
 		["AutoBarButtonMiscFun"] = "Misc, Fun",
-		["AutoBarButtonGuildSpell"] = "Guild Spells",
+		["AutoBarButtonGuildSpell"] = "Guild & Warbands",
+		["AutoBarButtonRacial"] = "Racials",
+		["Spell.Racial"] = "Racials",
 		["AutobarSunsongRanch"] = "Sunsong Ranch",
 		["AutoBarButtonRecovery"] = "Mana / Rage / Energy",
 		["AutoBarButtonRotationDrums"] = "Rotation: Drums",
@@ -241,6 +245,9 @@ if (GetLocale() == "enUS") then
 		["AutoBarButtonWaterBuff"] = "Water Buff",
 
 
+		["AutoBarButtonShapeshift"] = "Shapeshift",
+		["AutoBarButtonTotem"] = "Totems",
+		["AutoBarButtonPortals"] = "Portals",
 		["AutoBarButtonBear"] = "Bear",
 		["AutoBarButtonBoomkinTree"] = "Tree of Life / Boomkin",
 		["AutoBarButtonCat"] = "Cat",

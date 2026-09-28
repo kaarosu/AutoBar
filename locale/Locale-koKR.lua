@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Courtesy of Sayclub
@@ -258,6 +258,9 @@ if (GetLocale() == "koKR") then
 		["AutoBarButtonWater"] = "음료수",
 		["AutoBarButtonWaterBuff"] = "음료 버프",
 
+		["AutoBarButtonShapeshift"] = "변신",
+		["AutoBarButtonTotem"] = "토템",
+		["AutoBarButtonPortals"] = "차원문",
 		["AutoBarButtonBear"] = "곰",
 		["AutoBarButtonBoomkinTree"] = "생명의 나무 / 달빛야수",
 		["AutoBarButtonCat"] = "표범",

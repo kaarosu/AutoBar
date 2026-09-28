@@ -3,11 +3,10 @@ local _ADDON_NAME, AB = ... -- Pulls back the Addon-Local Variables and store th
 
 AB.WHATSNEW_TEXT = "" ..
 [[
- - TOC bump
- - Datamining
- - Updated thrid-party libs
- - Fixed issue with other bars blocking AutoBar's in MoveBars mode
- - Have you checked out Lexomancer on Steam or Itch.io? You should! Free demo...
+ - Made the default Config window a bit bigger since no one ever notices the options at the bottom.
+ - Fixed and re-enabled PopupOnShift option.
+ - Improved the Quest button.
+ - More fixes for Blizzard cooldown nonsense.
 ]] .. "|n"
 
 

@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Courtesy of Teodred, curexx
@@ -258,6 +258,9 @@ if (GetLocale() == "deDE") then
 		["AutoBarButtonWater"] = "Wasser",
 		["AutoBarButtonWaterBuff"] = "Wasser Buff",
 
+		["AutoBarButtonShapeshift"] = "Gestaltwandlung",
+		["AutoBarButtonTotem"] = "Totems",
+		["AutoBarButtonPortals"] = "Portale",
 		["AutoBarButtonBear"] = "Bär",
 		["AutoBarButtonBoomkinTree"] = "Baum des Lebens / Boomkin",
 		["AutoBarButtonCat"] = "Katze",

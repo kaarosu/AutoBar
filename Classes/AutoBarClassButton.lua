@@ -246,6 +246,10 @@ local function funcOnEnter(self)
 	else
 		AutoBar.Class.BasicButton.TooltipShow(self)
 	end
+
+	if not InCombatLockdown() and self.popupHeader then
+		self.popupHeader:Show()
+	end
 end
 
 local function funcOnLeave(self)
@@ -254,7 +258,7 @@ end
 
 function AutoBar.Class.Button:CreateButtonFrame()
 	local name = self:GetButtonFrameName()
-	local frame = CreateFrame("Button", name, self.parentBar.frame, "ActionButtonTemplate, SecureActionButtonTemplate, SecureHandlerBaseTemplate")
+	local frame = CreateFrame("Button", name, self.parentBar.frame, "ActionButtonTemplate, SecureActionButtonTemplate, SecureHandlerBaseTemplate, SecureHandlerEnterLeaveTemplate")
 	self.frame = frame
 
 	frame:ClearAllPoints()
@@ -266,13 +270,16 @@ function AutoBar.Class.Button:CreateButtonFrame()
 	frame:SetAttribute("checkfocuscast", true)
 
 	frame.class = self
-	frame:SetMouseClickEnabled()
-	code.RegisterForClicks(frame)
+	frame:EnableMouse(true)
+	if (frame.SetMouseClickEnabled) then frame:SetMouseClickEnabled(true) end
+	if (frame.SetMouseMotionEnabled) then frame:SetMouseMotionEnabled(true) end
+	frame:RegisterForClicks("AnyUp", "AnyDown")
+	frame:RegisterForDrag("LeftButton", "RightButton")
 
 	frame:SetScript("OnUpdate", OnUpdateFunc)
 
-	frame:SetScript("OnEnter", funcOnEnter)
-	frame:SetScript("OnLeave", funcOnLeave)
+	frame:HookScript("OnEnter", funcOnEnter)
+	frame:HookScript("OnLeave", funcOnLeave)
 
 	RegisterStateDriver(frame, "visibility", AutoBar.visibility_driver_string)
 
@@ -302,6 +309,42 @@ function AutoBar.Class.Button:CreateButtonFrame()
 		group:AddButton(frame, frame.MasqueButtonData)
 	end
 	frame.normalTexture = frame:GetNormalTexture()
+	
+	if frame.normalTexture then
+		frame.normalTexture:ClearAllPoints()
+		frame.normalTexture:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+		frame.normalTexture:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+	end
+	if frame.icon then
+		frame.icon:ClearAllPoints()
+		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+		frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+	end
+	if frame.border then
+		frame.border:ClearAllPoints()
+		frame.border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+		frame.border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+		frame.border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+		frame.border:SetBlendMode("ADD")
+	end
+	if frame.SlotBackground then frame.SlotBackground:Hide() end
+	if frame.SlotArt then frame.SlotArt:Hide() end
+	
+	-- Clamp interaction textures in 11.0
+	local function clampTexture(tex)
+		if tex then
+			tex:ClearAllPoints()
+			tex:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+			tex:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+		end
+	end
+	if frame.GetNormalTexture then clampTexture(frame:GetNormalTexture()) end
+	if frame.GetPushedTexture then clampTexture(frame:GetPushedTexture()) end
+	if frame.GetHighlightTexture then clampTexture(frame:GetHighlightTexture()) end
+	if frame.GetCheckedTexture then clampTexture(frame:GetCheckedTexture()) end
+	if frame.CheckedTexture then clampTexture(frame.CheckedTexture) end
+	if frame.NewActionTexture then clampTexture(frame.NewActionTexture) end
+	if frame.SpellHighlightTexture then clampTexture(frame.SpellHighlightTexture) end
 
 	local frameStrata = AutoBar.barLayoutDBList[self.parentBar.barKey].frameStrata
 	frame:SetFrameStrata(frameStrata)
@@ -339,7 +382,7 @@ end
 -- Return true if successful
 -- Return nil if not
 function AutoBar.Class.Button:ShuffleItem(itemId, targetBag, targetSlot, isNewItem)
-	local _, itemCount, _locked = GetContainerItemInfo(targetBag, targetSlot)
+	local _, itemCount, _locked = AB.GetContainerItemInfo(targetBag, targetSlot)
 	local totalCount = code.GetItemCount(itemId)
 	if (not itemCount and totalCount > 0) then
 		AutoBarSearch:ScanBagsInCombat()
@@ -358,11 +401,11 @@ function AutoBar.Class.Button:ShuffleItem(itemId, targetBag, targetSlot, isNewIt
 				local bag, slot, spell = AutoBarSearch.found:GetItemData(itemId, index)
 --print("ShuffleItem checking  index " .. tostring(index) .. " bag " .. tostring(bag) .. " slot " .. tostring(slot) .. " spell " .. tostring(spell))
 				if (bag and slot) then
-					local _, itemCount, locked = GetContainerItemInfo(bag, slot)
+					local _, itemCount, locked = AB.GetContainerItemInfo(bag, slot)
 					if (itemCount and itemCount > 0) then
 						ClearCursor()
-						C_Container.PickupContainerItem(bag, slot)
-						C_Container.PickupContainerItem(targetBag, targetSlot)
+						AB.PickupContainerItem(bag, slot)
+						AB.PickupContainerItem(targetBag, targetSlot)
 						AutoBarSearch.found:ClearItemData(itemId, index)
 --print("ShuffleItem actually swapped index " .. tostring(index) .. " bag " .. tostring(bag) .. " slot " .. tostring(slot) .. " locked " .. tostring(locked) .. " targetBag " .. tostring(targetBag) .. " targetSlot " .. tostring(targetSlot))
 						return true
@@ -426,7 +469,7 @@ function AutoBar.Class.Button:PostClick(mouseButton, down)
 			local itemId = self.frame:GetAttribute("itemId")
 			local itemLink = self.frame:GetAttribute("item")
 			local targetBag, targetSlot = strmatch(itemLink, "^(%d+)%s+(%d+)$")
-			if (C_Item.IsConsumableItem(itemId) and targetBag and targetSlot) then
+			if (IsConsumableItem(itemId) and targetBag and targetSlot) then
 				local didShuffle = AutoBar.Class.Button:ShuffleItem(itemId, targetBag, targetSlot)
 				if (not didShuffle) then
 --print("\nAutoBar.Class.PopupButton.prototype:PostClick did not shuffle, switchItem itemId " .. tostring(itemId) .. " targetBag " .. tostring(targetBag) .. " targetSlot " .. tostring(targetSlot))
@@ -556,7 +599,7 @@ function AutoBar.Class.Button:UpdateHotkeys()
 		key = AB.LibKeyBound.Binder:GetBindings(frame)
 	end
 	if (key) then
-		frame.hotKey:SetText(AB.LibKeyBound:ToShortKey(GetBindingText(key, "KEY_", true)))
+		frame.hotKey:SetText(AB.LibKeyBound:ToShortKey(GetBindingText(key, "KEY_", 1)))
 	else
 		frame.hotKey:SetText("")
 	end
@@ -568,7 +611,7 @@ function AutoBar.Class.Button:UpdateCooldown()
 	AutoBar.Class.Button.super.UpdateCooldown(self)
 
 	local popupHeader = self.frame.popupHeader
-	if (popupHeader) then
+	if (popupHeader and popupHeader:IsShown()) then
 		for _, popupButton in pairs(popupHeader.popupButtonList) do
 			popupButton:UpdateCooldown()
 		end
@@ -581,7 +624,7 @@ function AutoBar.Class.Button:UpdateCount()
 	AutoBar.Class.Button.super.UpdateCount(self)
 	if (AutoBarDB2.settings.show_count) then
 		local popupHeader = self.frame.popupHeader
-		if (popupHeader) then
+		if (popupHeader and popupHeader:IsShown()) then
 			for _, popupButton in pairs(popupHeader.popupButtonList) do
 				popupButton:UpdateCount()
 			end
@@ -596,7 +639,7 @@ function AutoBar.Class.Button:UpdateUsable()
 		AutoBar.Class.Button.super.UpdateUsable(self)
 
 		local popupHeader = self.frame.popupHeader
-		if (popupHeader) then
+		if (popupHeader and popupHeader:IsShown()) then
 			for _, popupButton in pairs(popupHeader.popupButtonList) do
 				popupButton:UpdateUsable()
 			end
@@ -674,29 +717,29 @@ function AutoBar.Class.Button:IsActive()
 end
 
 
--- local function FindSpell(spellName, bookType)
--- 	local s
--- 	local found = false;
--- 	for i = 1, MAX_SKILLLINE_TABS do
--- 		local name, _, offset, numSpells = GetSpellTabInfo(i)
--- 		if (not name) then
--- 			break
--- 		end
--- 		for s = offset + 1, offset + numSpells do
--- 			local spell = GetSpellBookItemName(s, bookType)
--- 			if (spell == spellName) then
--- 				found = true
--- 			end
--- 			if (found and spell ~=spellName) then
--- 				return s-1
--- 			end
--- 		end
--- 	end
--- 	if (found) then
--- 		return s
--- 	end
--- 	return nil
--- end
+local function FindSpell(spellName, bookType)
+	local s
+	local found = false;
+	for i = 1, MAX_SKILLLINE_TABS do
+		local name, _, offset, numSpells = AB.GetSpellTabInfo(i)
+		if (not name) then
+			break
+		end
+		for s = offset + 1, offset + numSpells do
+			local spell = AB.GetSpellBookItemName(s, bookType)
+			if (spell == spellName) then
+				found = true
+			end
+			if (found and spell ~=spellName) then
+				return s-1
+			end
+		end
+	end
+	if (found) then
+		return s
+	end
+	return nil
+end
 
 -- Set Cursor based on the type settings
 function AutoBar.Class.Button:SetDragCursor()
@@ -704,16 +747,16 @@ function AutoBar.Class.Button:SetDragCursor()
 	if (itemType) then
 		if (itemType == "item") then
 			local itemLink = self.frame:GetAttribute("item")
-			C_Item.PickupItem(itemLink)
+			PickupItem(itemLink)
 		elseif (itemType == "action") then
 			local action = self.frame:GetAttribute("action1")
-			PickupAction(tonumber(action))
+			PickupAction(action)
 		elseif (itemType == "macro") then
 			local macroIndex = self.frame:GetAttribute("macro")
 			PickupMacro(macroIndex)
 		elseif (itemType == "spell") then
 			local spellName = self.frame:GetAttribute("spell")
-			C_Spell.PickupSpell(spellName)
+			AB.PickupSpellBookItem(spellName)
 		end
 	end
 end
@@ -745,21 +788,22 @@ function AutoBar.Class.Button:OnUpdate(elapsed)
 
 	local frame = self.frame
 	local itemType = frame:GetAttribute("type")
-	local inRange = false
+	local inRange = 1
 	if (itemType == "item") then
 		local itemId = frame:GetAttribute("itemId")
-		if (C_Item.ItemHasRange(itemId)) then
-			inRange = C_Item.IsItemInRange(itemId, "target")
+		if (AB.ItemHasRange(itemId)) then
+			inRange = AB.IsItemInRange(itemId, "target")
 		end
 	elseif (itemType == "spell") then
 		local spellName = frame:GetAttribute("spell")
-		if (C_Spell.SpellHasRange(spellName)) then
-			inRange = C_Spell.IsSpellInRange(spellName, "target")
+		if (AB.SpellHasRange(spellName)) then
+			inRange = AB.IsSpellInRange(spellName, "target")
 		end
 	end
 
-	if (frame.outOfRange ~= (not inRange)) then
-		frame.outOfRange = not inRange
+	local isOutOfRange = (inRange == 0 or inRange == false)
+	if (frame.outOfRange ~= isOutOfRange) then
+		frame.outOfRange = isOutOfRange
 		self:UpdateUsable()
 	end
 

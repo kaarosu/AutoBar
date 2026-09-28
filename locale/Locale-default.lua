@@ -105,6 +105,7 @@ atl("Spell.ChallengePortals", "Spell.ChallengePortals");
 
 atl("HearthIncludeAncientDalaran", "Include Ancient Dalaran");
 atl("HearthIncludeChallengePortals", "Include Challenge Portals");
+atl("HearthExcludeMagePortals", "Exclude Mage Portals");
 
 atl("Include Basic Combo Food", "Include Basic Combo Food");
 
@@ -145,6 +146,8 @@ atl("NewButtonTooltip", "Create a new custom button")
 
 atl("Square Popups", "Square Popups")
 atl("Square Popups Desc", "Try to organize popups into more of a square shape")
+atl("Clamp Popups to screen", "Clamp Popups to screen")
+atl("Clamp Popups to screen Desc", "Adjust popup directions and column wrapping to keep popup buttons on screen")
 
 atl("Contributors", "Contributors")
 
@@ -153,7 +156,6 @@ atl("Summon A Random Pet", "Summon Random Pet|n|cFFFFD100Summon a random pet fro
 atl("Summon A Random Fave Pet", "Summon Favourite Pet|n|cFFFFD100Summon a random pet|nfrom your list of favourites|nin the pet journal|r")
 atl("Dismiss Battle Pet", "Dismiss Battle Pet|n|cFFFFD100Dismiss your current battle pet|r")
 atl("Summon A Random Favourite Mount", "Summon Favourite Mount|n|cFFFFD100Summon a random mount from your list of favourites in the mount journal|r")
-atl("View BattlePet Journal", "View Battle Pet Journal")
 
 atl("Raid 1","Raid Star")
 atl("Raid 2","Raid Circle")
@@ -166,11 +168,6 @@ atl("Raid 8","Raid Skull")
 
 atl("OnlyFavouriteHearth", "Only show favourite Hearth toys")
 atl("OpenableIncludeCraftKnowledge", "Include Craft Knowledge Items")
-atld("Empty Slot")
-atld("Click with an item or spell on your cursor to add it.")
-atld("Ctrl-click to delete this slot.")
-atld("Ctrl-click to remove.")
-atld("AutoBar: '%s' is not supported here.")
 local quick_sets =
 {
 	--Categories
@@ -186,7 +183,6 @@ local quick_sets =
 	"Macro.BattlePet.SummonRandom",
 	"Macro.BattlePet.DismissPet",
 	"Macro.BattlePet.SummonRandomFave",
-	"Macro.BattlePet.Journal",
 	"Macro.Raid Target",
 	"Muffin.Battle Pet Items.Bandages",
 	"Muffin.Battle Pet Items.Level",
@@ -261,6 +257,11 @@ local quick_sets =
 	"Spell.Rogue.Thief",
 	"Spell.Warlock.Create Spellstone",
 	"Spell.Warlock.Create Firestone",
+	"Spell.Racial",
+	"AutoBarButtonRacial",
+	"AutoBarButtonShapeshift",
+	"AutoBarButtonTotem",
+	"AutoBarButtonPortals",
 }
 
 atl_table(quick_sets);

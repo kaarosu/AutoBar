@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Various Artists
@@ -261,6 +261,9 @@ if (GetLocale() == "itIT") then
 		["AutoBarButtonWater"] = "Water",
 		["AutoBarButtonWaterBuff"] = "Water Buff",
 
+		["AutoBarButtonShapeshift"] = "Forma",
+		["AutoBarButtonTotem"] = "Totem",
+		["AutoBarButtonPortals"] = "Portali",
 		["AutoBarButtonBear"] = "Bear",
 		["AutoBarButtonBoomkinTree"] = "Tree of Life / Boomkin",
 		["AutoBarButtonCat"] = "Cat",

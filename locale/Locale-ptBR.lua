@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 --
@@ -260,6 +260,9 @@ if (GetLocale() == "ptBR") then
 		["AutoBarButtonWater"] = "Water",
 		["AutoBarButtonWaterBuff"] = "Water Buff",
 
+		["AutoBarButtonShapeshift"] = "Forma",
+		["AutoBarButtonTotem"] = "Totens",
+		["AutoBarButtonPortals"] = "Portais",
 		["AutoBarButtonBear"] = "Bear",
 		["AutoBarButtonBoomkinTree"] = "Tree of Life / Boomkin",
 		["AutoBarButtonCat"] = "Cat",

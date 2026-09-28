@@ -32,7 +32,6 @@ end
 
 -- Handle dragging of items, macros, spells to the button
 -- Handle rearranging of buttons when buttonLock is off
---TODO: Why is this in the Button class? It should be part of Category
 local function AddItemToCategory(category, itemType, itemId, itemInfo)
 	local categoryInfo = AutoBarCategoryList[category]
 	local itemsListDB = categoryInfo.customCategoriesDB.items
@@ -142,11 +141,17 @@ end
 
 --	1) Rapid movement or movement off the window breaks the Blizzard code.  We use a sensible timer to fix this - popupNaziSnippet
 local popupNaziSnippet = [[
-	local anchorButton = self:GetFrameRef("anchorButton")
-	if self:IsUnderMouse(true) or anchorButton:IsUnderMouse() then
-		self:SetTimer(1)
+	local flag = self:IsUnderMouse(true)
+	if (flag) then
+		local queued = control:SetTimer(1, "hoverCheck")
 	else
-		self:Hide()
+		local anchorButton = self:GetFrameRef("anchorButton")
+		x, y = anchorButton:GetMousePosition()
+		if (x and y) then
+			local queued = control:SetTimer(1, "hoverCheck")
+		else
+			self:Hide()
+		end
 	end
 ]]
 
@@ -167,13 +172,71 @@ popupNaziHandler:SetAttribute("_onattributechanged", [[
 
 
 
+-- Clear the state attributes of the button
+local function ClearButtonAttributes(frame)
+	frame:SetAttribute("target-slot", nil)
+	frame:SetAttribute("target-slot1", nil)
+	frame:SetAttribute("target-slot2", nil)
+	frame:SetAttribute("target-bag", nil)
+	frame:SetAttribute("target-bag1", nil)
+	frame:SetAttribute("target-bag2", nil)
+	frame:SetAttribute("unit", nil)
+	frame:SetAttribute("unit1", nil)
+	frame:SetAttribute("unit2", nil)
+	frame:SetAttribute("type", nil)
+	frame:SetAttribute("type1", nil)
+	frame:SetAttribute("type2", nil)
+	frame:SetAttribute("item", nil)
+	frame:SetAttribute("item1", nil)
+	frame:SetAttribute("item2", nil)
+	frame:SetAttribute("spell", nil)
+	frame:SetAttribute("spell1", nil)
+	frame:SetAttribute("spell2", nil)
+	frame:SetAttribute("toy", nil)
+	frame:SetAttribute("toy1", nil)
+	frame:SetAttribute("toy2", nil)
+	frame:SetAttribute("macroId", nil)
+	frame:SetAttribute("macro", nil)
+	frame:SetAttribute("macro1", nil)
+	frame:SetAttribute("macro2", nil)
+	frame:SetAttribute("macrotext", nil)
+	frame:SetAttribute("macrotext1", nil)
+	frame:SetAttribute("macrotext2", nil)
+	frame:SetAttribute("macro_action", nil)
+	frame:SetAttribute("macro_icon", nil)
+	frame:SetAttribute("macroName", nil)
+	frame:SetAttribute("macroBody", nil)
+	frame:SetAttribute("itemLink", nil)
+	frame:SetAttribute("AutoBarGUID", nil)
+	frame:SetAttribute("icon", nil)
+	frame:SetAttribute("category", nil)
+	frame:SetAttribute("itemId", nil)
+end
+
 -- Clone the popup into the anchorButton
-local snippetOnClick = [[
-	local popupHeader = self:GetFrameRef("popupHeader")
-	local anchorButton = popupHeader:GetFrameRef("anchorButton")
+local function InsecurePopupButton_PreClick(self, button)
+	if InCombatLockdown() then return end
+
+	-- If Ctrl is held, set as default without using the item/spell
+	if IsControlKeyDown() then
+		self:SetAttribute("abSavedType", self:GetAttribute("type"))
+		self:SetAttribute("type", nil)
+	end
+end
+
+local function InsecurePopupButton_PostClick(self, button)
+	if InCombatLockdown() then return end
+	
+	local popupHeader = self.popupHeader
+	if not popupHeader then return end
+	local anchorButton = popupHeader.anchorButton
+	if not anchorButton then return end
+
+	-- Clear prior attributes on anchorButton to avoid stale attribute leakage
+	ClearButtonAttributes(anchorButton)
 
 	-- Move the attributes that make the button work
-	local itemType = self:GetAttribute("type")
+	local itemType = self:GetAttribute("type") or self:GetAttribute("abSavedType")
 	local itemType1 = self:GetAttribute("type1")
 	local item_guid = self:GetAttribute("AutoBarGUID")
 
@@ -183,8 +246,9 @@ local snippetOnClick = [[
 		anchorButton:SetAttribute("target-bag1", self:GetAttribute("target-bag1"))
 		anchorButton:SetAttribute("item1", self:GetAttribute("item1"))
 		anchorButton:SetAttribute("spell1", self:GetAttribute("spell1"))
+		anchorButton:SetAttribute("toy1", self:GetAttribute("toy1"))
 	end
-	anchorButton:SetAttribute("type", self:GetAttribute("type"))
+	anchorButton:SetAttribute("type", itemType)
 	anchorButton:SetAttribute("unit", self:GetAttribute("unit"))
 	anchorButton:SetAttribute("target-slot", self:GetAttribute("target-slot"))
 	anchorButton:SetAttribute("target-bag", self:GetAttribute("target-bag"))
@@ -203,18 +267,19 @@ local snippetOnClick = [[
 		anchorButton:SetAttribute("macroBody", self:GetAttribute("macroBody"))
 	end
 
-
 	-- Move the right click attributes
-	itemType = self:GetAttribute("type2")
+	local itemType2 = self:GetAttribute("type2")
 	anchorButton:SetAttribute("type2", self:GetAttribute("type2"))
 	anchorButton:SetAttribute("target-slot2", self:GetAttribute("target-slot2"))
 	anchorButton:SetAttribute("target-bag2", self:GetAttribute("target-bag2"))
 	anchorButton:SetAttribute("unit2", self:GetAttribute("unit2"))
-	if (itemType == "item") then
+	if (itemType2 == "item") then
 		anchorButton:SetAttribute("item2", self:GetAttribute("item2"))
-	elseif (itemType == "spell") then
+	elseif (itemType2 == "spell") then
 		anchorButton:SetAttribute("spell2", self:GetAttribute("spell2"))
-	elseif (itemType == "macro") then
+	elseif (itemType2 == "toy") then
+		anchorButton:SetAttribute("toy2", self:GetAttribute("toy2"))
+	elseif (itemType2 == "macro") then
 		anchorButton:SetAttribute("macro2", self:GetAttribute("macro2"))
 		anchorButton:SetAttribute("macrotext2", self:GetAttribute("macrotext2"))
 	end
@@ -228,21 +293,17 @@ local snippetOnClick = [[
 	-- Arrange on Use source popup button
 	anchorButton:SetAttribute("sourceButton", self)
 
-	-- If Ctrl is held, set as default without using the item/spell
-	if IsControlKeyDown() then
-		self:SetAttribute("abSavedType", self:GetAttribute("type"))
-		self:SetAttribute("type", nil)
-	end
-]]
-
--- Restore the type suppressed by Ctrl+click (set as default without using)
-local snippetPostClick = [[
 	local savedType = self:GetAttribute("abSavedType")
 	if savedType then
 		self:SetAttribute("type", savedType)
 		self:SetAttribute("abSavedType", nil)
 	end
-]]
+	
+	local popupHeader = self.popupHeader
+	if popupHeader then
+		popupHeader:Hide()
+	end
+end
 
 -- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
 local function UpdateIcon(button, texture)
@@ -270,6 +331,8 @@ local function UpdateHandlers(frame)
 			-- spell attribute with a numeric ID (e.g. AutoBarButtonCrafting), but "itemId"
 			-- always holds the original sorted key (spell name) needed for SwapToFront.
 			itemId = frame:GetAttribute("itemId")
+		elseif (itemType == "toy") then
+			itemId = frame:GetAttribute("toy") or frame:GetAttribute("itemId")
 		elseif (itemType == "macro") then
 			itemId = frame:GetAttribute("macroId")
 		else
@@ -301,9 +364,97 @@ function AutoBarButton:SetupPopups(nItems)
 
 	local debug = false --(buttonKey == "AutoBarButtonHearth")
 
+	-- Arrange on Use Buttons show the first Button because it needs to remain there for changes during combat.
+	local arrangeOnUse = self.buttonDB.arrangeOnUse
+	local popupIndexStart = 2
+	if (arrangeOnUse) then
+		popupIndexStart = 1
+	end
+	local numPopups = nItems - popupIndexStart + 1
+
 	local padding = layoutDB.padding
 	local hitRectPadding = -math.max(4, padding)
-	local popupDirection = layoutDB.popupDirection
+	local popupDirection = layoutDB.popupDirection or "1"
+	local max_popup_height = self.buttonDB.max_popup_height or MAX_POPUP_HEIGHT
+	local splitLength = max_popup_height
+
+	local clampPopups = AutoBarDB2 and AutoBarDB2.settings and AutoBarDB2.settings.clamp_popups_to_screen
+	if (clampPopups == nil) then clampPopups = true end
+
+	local buttonWidth = ABGData.default_button_width
+	local buttonHeight = ABGData.default_button_height
+
+	-- 1. Check Primary Direction & Height/Width Clamping
+	if (clampPopups and frame:GetLeft() and numPopups > 0) then
+		local frameScale = frame:GetEffectiveScale() or 1
+		local uiScale = UIParent:GetEffectiveScale() or 1
+		local scaleRatio = frameScale / uiScale
+
+		local frameLeft = frame:GetLeft() * scaleRatio
+		local frameRight = frame:GetRight() * scaleRatio
+		local frameTop = frame:GetTop() * scaleRatio
+		local frameBottom = frame:GetBottom() * scaleRatio
+
+		local screenWidth = UIParent:GetWidth()
+		local screenHeight = UIParent:GetHeight()
+
+		if (popupDirection == "1" or popupDirection == "3") then
+			local colHeight = (splitLength * buttonHeight + (splitLength - 1) * padding) * scaleRatio
+			local spaceAbove = screenHeight - frameTop
+			local spaceBelow = frameBottom
+
+			if (popupDirection == "1") then
+				if (frameTop + colHeight > screenHeight and spaceBelow > spaceAbove) then
+					popupDirection = "3"
+				end
+			elseif (popupDirection == "3") then
+				if (frameBottom - colHeight < 0 and spaceAbove > spaceBelow) then
+					popupDirection = "1"
+				end
+			end
+
+			local availHeight = (popupDirection == "1") and spaceAbove or spaceBelow
+			local maxFit = math.max(1, math.floor(((availHeight / scaleRatio) + padding) / (buttonHeight + padding)))
+			if (maxFit < splitLength) then
+				splitLength = maxFit
+			end
+		elseif (popupDirection == "2" or popupDirection == "4") then
+			local rowWidth = (splitLength * buttonWidth + (splitLength - 1) * padding) * scaleRatio
+			local spaceLeft = frameLeft
+			local spaceRight = screenWidth - frameRight
+
+			if (popupDirection == "2") then
+				if (frameLeft - rowWidth < 0 and spaceRight > spaceLeft) then
+					popupDirection = "4"
+				end
+			elseif (popupDirection == "4") then
+				if (frameRight + rowWidth > screenWidth and spaceLeft > spaceRight) then
+					popupDirection = "2"
+				end
+			end
+
+			local availWidth = (popupDirection == "2") and spaceLeft or spaceRight
+			local maxFit = math.max(1, math.floor(((availWidth / scaleRatio) + padding) / (buttonWidth + padding)))
+			if (maxFit < splitLength) then
+				splitLength = maxFit
+			end
+		end
+
+		if (self.buttonDB.square_popups == true) then
+			local nSplits = math.ceil(numPopups / splitLength)
+			if (nSplits > 1) then
+				splitLength = math.ceil(numPopups / nSplits)
+			end
+		end
+	else
+		if (self.buttonDB.square_popups == true) then
+			local nSplits = math.ceil(nItems / max_popup_height)
+			if (nSplits > 1) then
+				splitLength = math.ceil(nItems / nSplits)
+			end
+		end
+	end
+
 	local relativeSide, side, splitRelativeSide, splitSide
 	local paddingX, paddingY, splitPaddingX, splitPaddingY = 0, 0, 0, 0
 	if (popupDirection == "1") then	-- Top
@@ -336,30 +487,65 @@ function AutoBarButton:SetupPopups(nItems)
 		splitPaddingY = -padding
 	end
 
-	local max_popup_height = self.buttonDB.max_popup_height or MAX_POPUP_HEIGHT
+	-- 2. Check Secondary Axis (Column/Row Wrapping)
+	if (clampPopups and frame:GetLeft() and numPopups > 0) then
+		local frameScale = frame:GetEffectiveScale() or 1
+		local uiScale = UIParent:GetEffectiveScale() or 1
+		local scaleRatio = frameScale / uiScale
 
-	-- For gigantic popups, split it up into a block
-	local splitLength = max_popup_height
-	local splitRelativePoint
+		local frameLeft = frame:GetLeft() * scaleRatio
+		local frameRight = frame:GetRight() * scaleRatio
+		local frameTop = frame:GetTop() * scaleRatio
+		local frameBottom = frame:GetBottom() * scaleRatio
 
-	if(self.buttonDB.square_popups == true) then
-		local nSplits = math.ceil(nItems / max_popup_height)
-		if (nSplits > 1) then
-			splitLength = math.ceil(nItems / nSplits)
+		local screenWidth = UIParent:GetWidth()
+		local screenHeight = UIParent:GetHeight()
+
+		local numSplits = math.ceil(numPopups / splitLength)
+		if (numSplits > 1) then
+			local extraSplits = numSplits - 1
+			if (popupDirection == "1") then -- Top, default wraps Right
+				local extraWidth = (extraSplits * (buttonWidth + padding)) * scaleRatio
+				if (frameRight + extraWidth > screenWidth) then
+					if (frameLeft - extraWidth >= 0 or frameLeft > (screenWidth - frameRight)) then
+						splitSide = "RIGHT"
+						splitRelativeSide = "LEFT"
+						splitPaddingX = -padding
+					end
+				end
+			elseif (popupDirection == "3") then -- Bottom, default wraps Left
+				local extraWidth = (extraSplits * (buttonWidth + padding)) * scaleRatio
+				if (frameLeft - extraWidth < 0) then
+					if (frameRight + extraWidth <= screenWidth or (screenWidth - frameRight) > frameLeft) then
+						splitSide = "LEFT"
+						splitRelativeSide = "RIGHT"
+						splitPaddingX = padding
+					end
+				end
+			elseif (popupDirection == "2") then -- Left, default wraps Up (Top)
+				local extraHeight = (extraSplits * (buttonHeight + padding)) * scaleRatio
+				if (frameTop + extraHeight > screenHeight) then
+					if (frameBottom - extraHeight >= 0 or frameBottom > (screenHeight - frameTop)) then
+						splitSide = "TOP"
+						splitRelativeSide = "BOTTOM"
+						splitPaddingY = -padding
+					end
+				end
+			elseif (popupDirection == "4") then -- Right, default wraps Down (Bottom)
+				local extraHeight = (extraSplits * (buttonHeight + padding)) * scaleRatio
+				if (frameBottom - extraHeight < 0) then
+					if (frameTop + extraHeight <= screenHeight or (screenHeight - frameTop) > frameBottom) then
+						splitSide = "BOTTOM"
+						splitRelativeSide = "TOP"
+						splitPaddingY = padding
+					end
+				end
+			end
 		end
 	end
 
-
-	--if (self.buttonDB.max_popup_height) then
-	--	print("items:", nItems,"max height:", self.buttonDB.max_popup_height, "square:", self.buttonDB.square_popups, "split_len:", splitLength)
-	--end
-
-	-- Arrange on Use Buttons show the first Button because it needs to remain there for changes during combat.
-	local arrangeOnUse = self.buttonDB.arrangeOnUse
-	local popupIndexStart = 2
-	if (arrangeOnUse) then
-		popupIndexStart = 1
-	end
+	-- For gigantic popups, split it up into a block
+	local splitRelativePoint
 
 	local buttonItems = AutoBarSearch.items:GetList(buttonKey)
 
@@ -372,18 +558,18 @@ function AutoBarButton:SetupPopups(nItems)
 
 		-- Wrap OnClick/PostClick with the Arrange on use code
 		local wrapped = popupButtonFrame.snippetOnClick
+		
+		-- Always clear the broken secure handler attribute from older versions
+		popupButtonFrame:SetAttribute("_onclick", nil)
+		
 		if (wrapped and (not arrangeOnUse)) then
-			local _header, preBody, _post_body = popupHeader:UnwrapScript(popupButtonFrame, "OnClick")
-			assert(wrapped == preBody, "wrapped ~= preBody in UnwrapScript")
-			-- ToDo: Are we the only wrapping people?  Maybe add some recursive unwrapping of our exact script.
-			popupHeader:UnwrapScript(popupButtonFrame, "PostClick")
 			popupButtonFrame.snippetOnClick = nil
 			popupButtonFrame.snippetPostClick = nil
 		elseif ((not wrapped) and arrangeOnUse) then
-			SecureHandlerWrapScript(popupButtonFrame, "OnClick", popupHeader, snippetOnClick)
-			popupButtonFrame.snippetOnClick = snippetOnClick
-			SecureHandlerWrapScript(popupButtonFrame, "PostClick", popupHeader, snippetPostClick)
-			popupButtonFrame.snippetPostClick = snippetPostClick
+			popupButtonFrame:HookScript("PreClick", InsecurePopupButton_PreClick)
+			popupButtonFrame:HookScript("PostClick", InsecurePopupButton_PostClick)
+			popupButtonFrame.snippetOnClick = true
+			popupButtonFrame.snippetPostClick = true
 		end
 
 		-- Attach to edge of previous popupButtonFrame or the popupHeader
@@ -436,7 +622,6 @@ function AutoBarButton:SetupPopups(nItems)
 	popupHeader:SetHeight(2)
 	popupHeader:SetScale(1)
 	popupHeader:SetPoint(side, frame, relativeSide)
-	RegisterAutoHide(popupHeader, 0.25)
 
 	-- Hide unwanted buttons
 	for popupButtonIndex, popupButton in pairs(popupHeader.popupButtonList) do
@@ -517,11 +702,10 @@ function AutoBarButton:SetupButton()
 			local popupOnModifier = self:GetHierarchicalSetting("popupOnShift")
 
 			-- Create the Button's Popup Header
+			-- Create the Button's Popup Header
 			if (not popupHeader) then
 				local name = buttonKey .. "PopupHeader"
 				popupHeader = CreateFrame("Frame", name, frame, "SecureHandlerEnterLeaveTemplate")
-				popupHeader:SetAttribute("_onenter", [[self:Show(); control:SetTimer(1)]])
-				popupHeader:SetAttribute("_onleave", [[self:Hide()]])
 				popupHeader:SetFrameStrata("DIALOG")
 
 				-- Create the popupKeyHandler if required
@@ -536,7 +720,6 @@ function AutoBarButton:SetupButton()
 
 				frame.popupHeader = popupHeader
 				popupHeader.popupButtonList = {}
-				RegisterAutoHide(popupHeader, 0.5)
 			end
 
 			-- Add needed snippets (only execute once)
@@ -544,40 +727,53 @@ function AutoBarButton:SetupButton()
 				frame.popupHandler = popupHandler
 
 				frame:SetFrameRef("popupHeader", popupHeader)
-				frame:Execute([[
-					popupHeader = self:GetFrameRef("popupHeader")
-					popupHeader:ClearAllPoints()
-					popupHeader:SetPoint("BOTTOM", self, "TOP")
-					popupHeader:Raise()
-					popupHeader:Hide()
-				]])
-
-				SecureHandlerWrapScript(frame, "OnEnter", popupHandler, [[
-					popupHeader = self:GetFrameRef("popupHeader")
-					popupHeader:Show()
-				]])
-				popupHandler.TooltipHide = AutoBar.Class.BasicButton.TooltipHide
-				SecureHandlerWrapScript(frame, "OnLeave", popupHandler, [[
-					popupHeader = self:GetFrameRef("popupHeader")
-					popupHeader:Hide()
-				]])
-				popupHandler:SetAttribute("_adopt", frame)
-
-				-- Deal with rare irritating cases where Popups remain open incorrectly
-				popupHeader:SetFrameRef("popupNaziHandler", popupNaziHandler)
-				popupHeader:SetFrameRef("anchorButton", frame)
-				popupHeader:SetAttribute("_ontimer", popupNaziSnippet)
+				popupHeader.anchorButton = frame
+				popupHeader:SetScript("OnUpdate", function(self, elapsed)
+					local isHovered = self:IsMouseOver() or (self.anchorButton and self.anchorButton:IsMouseOver())
+					if not isHovered and self.popupButtonList then
+						for _, popupButton in pairs(self.popupButtonList) do
+							if popupButton.frame and popupButton.frame:IsVisible() and popupButton.frame:IsMouseOver() then
+								isHovered = true
+								break
+							end
+						end
+					end
+					
+					if not isHovered then
+						self.hoverTime = (self.hoverTime or 0) + elapsed
+						if self.hoverTime > 0.25 then
+							if InCombatLockdown() then return end
+							self:Hide()
+							self.hoverTime = 0
+						end
+					else
+						self.hoverTime = 0
+					end
+				end)
+				popupHeader:ClearAllPoints()
+				popupHeader:SetPoint("BOTTOM", frame, "TOP")
+				popupHeader:Hide()
 			end
 
 			local arrangeOnUse = self.buttonDB.arrangeOnUse
-			local wrapped = frame.UpdateIcon
-			-- Trigger Updating on the Anchor Button
-			if (wrapped and (not arrangeOnUse)) then
-				local _header, _preBody, _postBody = popupHeader:UnwrapScript(frame, "OnAttributeChanged")  --ToDo: Remove this?
-			elseif ((not wrapped) and arrangeOnUse) then
-				frame.UpdateIcon = UpdateIcon	-- Update Icon
-				frame.UpdateHandlers = UpdateHandlers	-- Update Handlers: Tooltip
-				SecureHandlerWrapScript(frame, "OnAttributeChanged", frame, snippetOnAttributeChanged)
+			if not frame.attributeHooked then
+				frame:HookScript("OnAttributeChanged", function(self, name, value)
+					if not self.UpdateIcon then return end
+					if name == "icon" then
+						self.UpdateIcon(self, value)
+					elseif name == "sourcebutton" or name == "sourceButton" then
+						self.UpdateHandlers(self)
+					end
+				end)
+				frame.attributeHooked = true
+			end
+			
+			if arrangeOnUse then
+				frame.UpdateIcon = UpdateIcon
+				frame.UpdateHandlers = UpdateHandlers
+			else
+				frame.UpdateIcon = nil
+				frame.UpdateHandlers = nil
 			end
 
 			self:SetupPopups(nItems)
@@ -612,35 +808,7 @@ end
 /script AutoBar.buttonList["AutoBarButtonHearth"].frame.popupHeader.popupButtonList[2].frame:SetPoint("RIGHT", -260,-80)
 --]]
 
--- Clear the state attributes of the button
-local function ClearButtonAttributes(frame)
-	frame:SetAttribute("target-slot1", nil)
-	frame:SetAttribute("target-slot2", nil)
-	frame:SetAttribute("target-bag1", nil)
-	frame:SetAttribute("target-bag2", nil)
-	frame:SetAttribute("unit2", nil)
-	frame:SetAttribute("type", nil)
-	frame:SetAttribute("type2", nil)
-	frame:SetAttribute("item", nil)
-	frame:SetAttribute("item2", nil)
-	frame:SetAttribute("spell", nil)
-	frame:SetAttribute("spell2", nil)
-	frame:SetAttribute("toy", nil)
-	frame:SetAttribute("macroId", nil)
-	frame:SetAttribute("macro", nil)
-	frame:SetAttribute("macrotext", nil)
-	frame:SetAttribute("macro_action", nil)
-	frame:SetAttribute("macro_icon", nil)
-	frame:SetAttribute("macroName", nil)
-	frame:SetAttribute("macroBody", nil)
-	frame:SetAttribute("macro2", nil)
-	frame:SetAttribute("macrotext2", nil)
-	frame:SetAttribute("itemLink", nil)
-	frame:SetAttribute("AutoBarGUID", nil)
-	frame:SetAttribute("icon", nil)
-	frame:SetAttribute("category", nil)
-	frame:SetAttribute("itemId", nil)
-end
+-- ClearButtonAttributes is defined above InsecurePopupButton_PreClick
 
 local SPELL_FEED_PET = code.get_spell_name_by_name("Feed Pet")
 local SPELL_PICK_LOCK = code.get_spell_name_by_name("Pick Lock")
@@ -790,9 +958,6 @@ function AutoBarButton:SetupAttributes(button, bag, slot, spell, macroId, p_type
 		elseif (bag and slot) then
 			local itemLink = AB.GetContainerItemLink(bag, slot)
 			frame:SetAttribute("itemLink", itemLink)
----			if (buttonDB.shuffle) then
----				itemLink = bag .. " " .. slot
----			end
 			frame:SetAttribute("type", "item")
 			frame:SetAttribute("item", itemLink)
 			if (not type2) then
@@ -800,9 +965,13 @@ function AutoBarButton:SetupAttributes(button, bag, slot, spell, macroId, p_type
 				frame:SetAttribute("item2", itemLink)
 			end
 		elseif (p_type_id == ABGData.TYPE_TOY) then
+			local toyID = tonumber(p_info_data.item_id)
 			frame:SetAttribute("type", "toy")
-			frame:SetAttribute("toy", p_info_data.item_id)
+			frame:SetAttribute("toy", toyID or p_info_data.item_id)
 			frame:SetAttribute("AutoBarGUID", p_info_data.guid)
+			if (toyID and C_ToyBox and C_ToyBox.GetToyLink) then
+				frame:SetAttribute("itemLink", C_ToyBox.GetToyLink(toyID))
+			end
 		elseif (p_type_id == ABGData.TYPE_MACRO_TEXT) then
 			frame:SetAttribute("type", "macro")
 			frame:SetAttribute("macrotext", p_info_data.macro_text)
@@ -1293,8 +1462,6 @@ function AutoBarButtonCrafting:init(parentBar, buttonDB)
 end
 
 if (ABGData.is_mainline_wow) then
-	--TODO: Clean up all this crap once I know it's working
-	--TODO: Would this nonsense be fixed by using IsSpellKnownOrOverridesKnown?
 	local function find_known_spell(p_list)
 		for _i, id in ipairs(p_list) do
 			if C_SpellBook.IsSpellInSpellBook(id) then
@@ -1428,6 +1595,31 @@ function AutoBarButtonCat:init(parentBar, buttonDB)
 end
 
 
+local AutoBarButtonShapeshift = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonShapeshift"] = AutoBarButtonShapeshift
+
+function AutoBarButtonShapeshift:init(parentBar, buttonDB)
+	AutoBarButtonShapeshift.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.CatForm")
+	self:AddCategory("Spell.BearForm")
+	self:AddCategory("Spell.Travel")
+	self:AddCategory("Spell.MoonkinForm")
+	self:AddCategory("Spell.TreeForm")
+	if (ABGData.is_mainline_wow) then
+		self:AddCategory("Spell.StagForm")
+	else
+		self:AddCategory("Spell.AquaticForm")
+	end
+end
+
+function AutoBarButtonShapeshift:GetLastUsed()
+	local nStance = GetShapeshiftForm(true)
+	local _, name = GetShapeshiftFormInfo(nStance)
+	return name
+end
+
+
 local AutoBarButtonCharge = Class(AutoBarButton)
 AutoBar.Class["AutoBarButtonCharge"] = AutoBarButtonCharge
 
@@ -1464,6 +1656,10 @@ AutoBar.Class["AutoBarButtonDebuff"] = AutoBarButtonDebuff
 
 function AutoBarButtonDebuff:init(parentBar, buttonDB)
 	AutoBarButtonDebuff.super.init(self, parentBar, buttonDB)
+
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
 
 	self:AddCategory("Spell.Debuff.Single")
 	self:AddCategory("Spell.Debuff.Multiple")
@@ -1720,23 +1916,29 @@ function AutoBarButtonHearth:init(parentBar, buttonDB)
 
 	local class = AutoBar.CLASS
 
+	if (class == "MAGE" and buttonDB.hearth_exclude_mage_portals == nil) then
+		buttonDB.hearth_exclude_mage_portals = true
+	end
+
 	if (class == "DEATHKNIGHT" or class == "DRUID" or class == "MAGE" or class == "SHAMAN" or class == "WARLOCK" or class ==  "MONK") then
-		self:AddCategory("Spell.Portals")
+		if (class ~= "MAGE" or not buttonDB.hearth_exclude_mage_portals) then
+			self:AddCategory("Spell.Portals")
+		end
 	end
 
 	if(buttonDB.hearth_include_ancient_dalaran and class == "MAGE") then
 		self:AddCategory("Spell.AncientDalaranPortals")
 	end
 
-	if (AutoBarCategoryList["Muffin.Misc.Hearth"]) then
-		self:AddCategory("Muffin.Misc.Hearth")
-	end
-	self:AddCategory("Misc.Hearth")
-
 	if (AutoBarCategoryList["Muffin.Toys.Hearth"]) then
 		AutoBarCategoryList["Muffin.Toys.Hearth"].only_favourites = buttonDB.only_favourite_hearth
 		self:AddCategory("Muffin.Toys.Hearth")
 	end
+
+	if (AutoBarCategoryList["Muffin.Misc.Hearth"]) then
+		self:AddCategory("Muffin.Misc.Hearth")
+	end
+	self:AddCategory("Misc.Hearth")
 
 	if (AutoBarCategoryList["Muffin.Toys.Portal"]) then
 		AutoBarCategoryList["Muffin.Toys.Portal"].only_favourites = false
@@ -1751,6 +1953,9 @@ end
 
 if (ABGData.is_mainline_wow) then
 	function AutoBarButtonHearth:AddOptions(optionList, passValue)
+		if (AutoBar.CLASS == "MAGE") then
+			self:SetOptionBoolean(optionList, passValue, "hearth_exclude_mage_portals", L["HearthExcludeMagePortals"])
+		end
 		self:SetOptionBoolean(optionList, passValue, "hearth_include_ancient_dalaran", L["HearthIncludeAncientDalaran"])
 		self:SetOptionBoolean(optionList, passValue, "only_favourite_hearth", L["OnlyFavouriteHearth"])
 		self:SetOptionBoolean(optionList, passValue, "hearth_include_challenge_portals", L["HearthIncludeChallengePortals"])
@@ -1815,6 +2020,7 @@ function AutoBarButtonQuest:init(parentBar, buttonDB)
 	self:AddCategory("Misc.Usable.BossItem")
 	if (ABGData.is_mainline_wow) then
 		self:AddCategory("Dynamic.Quest")
+		self:AddCategory("Spell.Zone")
 	end
 end
 
@@ -1986,30 +2192,29 @@ local function DestroyTotem(frame, totemType)
 	frame:SetAttribute("macrotext2", destroyMacro[totemType])
 end
 
-local function ABGetTotemCooldown(p_totem_slot)
-	local _, _totemName, start, duration = GetTotemInfo(p_totem_slot)
-	if issecretvalue and (issecretvalue(start) or issecretvalue(duration)) then
-		start = 0
-		duration = 0
-	end
-	return start, duration
+local AutoBarButtonTotemAir = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonTotemAir"] = AutoBarButtonTotemAir
+
+function AutoBarButtonTotemAir:init(parentBar, buttonDB)
+	AutoBarButtonTotemAir.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.Totem.Air")
 end
 
-local AutoBarButtonTotemBase = Class(AutoBarButton)
+function AutoBarButtonTotemAir:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+	AutoBarButtonTotemAir.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
 
-function AutoBarButtonTotemBase:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
-	AutoBarButtonTotemBase.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
-
-	DestroyTotem(self.frame, self.totemSlot)
+	DestroyTotem(self.frame, totemAir)
 end
 
 -- Set cooldown based on the deployed totem
-function AutoBarButtonTotemBase:UpdateCooldown()
+function AutoBarButtonTotemAir:UpdateCooldown()
 	local itemType = self.frame:GetAttribute("type")
 	if (itemType and not self.parentBar.faded) then
-		local start, duration = ABGetTotemCooldown(self.totemSlot)
+		local enabled = true
+		local _, _totemName, start, duration = GetTotemInfo(totemAir)
 
-		if (start and duration and start > 0 and duration > 0) then
+		if (start and duration and enabled and start > 0 and duration > 0) then
 			self.frame.cooldown:Show() -- ToDo: necessary?
 			CooldownFrame_Set(self.frame.cooldown, start, duration, 1)
 		else
@@ -2017,7 +2222,46 @@ function AutoBarButtonTotemBase:UpdateCooldown()
 		end
 
 		local popupHeader = self.frame.popupHeader
-		if (popupHeader) then
+		if (popupHeader and popupHeader:IsShown()) then
+			for _, popupButton in pairs(popupHeader.popupButtonList) do
+				popupButton:UpdateCooldown()
+			end
+		end
+	end
+end
+-- /script CooldownFrame_Set(AutoBarButtonTotemAirFrame.cooldown, 0, 0, 0)
+
+local AutoBarButtonTotemEarth = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonTotemEarth"] = AutoBarButtonTotemEarth
+
+function AutoBarButtonTotemEarth:init(parentBar, buttonDB)
+	AutoBarButtonTotemEarth.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.Totem.Earth")
+end
+
+function AutoBarButtonTotemEarth:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+	AutoBarButtonTotemEarth.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+
+	DestroyTotem(self.frame, totemEarth)
+end
+
+-- Set cooldown based on the deployed totem
+function AutoBarButtonTotemEarth:UpdateCooldown()
+	local itemType = self.frame:GetAttribute("type")
+	if (itemType and not self.parentBar.faded) then
+		local enabled = 1
+		local _, _totemName, start, duration = GetTotemInfo(totemEarth)
+
+		if (start and duration and enabled and start > 0 and duration > 0) then
+			self.frame.cooldown:Show() -- ToDo: necessary?
+			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		else
+			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
+		end
+
+		local popupHeader = self.frame.popupHeader
+		if (popupHeader and popupHeader:IsShown()) then
 			for _, popupButton in pairs(popupHeader.popupButtonList) do
 				popupButton:UpdateCooldown()
 			end
@@ -2026,43 +2270,107 @@ function AutoBarButtonTotemBase:UpdateCooldown()
 end
 
 
-local AutoBarButtonTotemAir = Class(AutoBarButtonTotemBase)
-AutoBar.Class["AutoBarButtonTotemAir"] = AutoBarButtonTotemAir
-
-function AutoBarButtonTotemAir:init(parentBar, buttonDB)
-	AutoBarButtonTotemAir.super.init(self, parentBar, buttonDB)
-	self.totemSlot = totemAir
-	self:AddCategory("Spell.Totem.Air")
-end
-
-
-local AutoBarButtonTotemEarth = Class(AutoBarButtonTotemBase)
-AutoBar.Class["AutoBarButtonTotemEarth"] = AutoBarButtonTotemEarth
-
-function AutoBarButtonTotemEarth:init(parentBar, buttonDB)
-	AutoBarButtonTotemEarth.super.init(self, parentBar, buttonDB)
-	self.totemSlot = totemEarth
-	self:AddCategory("Spell.Totem.Earth")
-end
-
-
-local AutoBarButtonTotemFire = Class(AutoBarButtonTotemBase)
+local AutoBarButtonTotemFire = Class(AutoBarButton)
 AutoBar.Class["AutoBarButtonTotemFire"] = AutoBarButtonTotemFire
 
 function AutoBarButtonTotemFire:init(parentBar, buttonDB)
 	AutoBarButtonTotemFire.super.init(self, parentBar, buttonDB)
-	self.totemSlot = totemFire
+
 	self:AddCategory("Spell.Totem.Fire")
 end
 
+function AutoBarButtonTotemFire:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+	AutoBarButtonTotemFire.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
 
-local AutoBarButtonTotemWater = Class(AutoBarButtonTotemBase)
+	DestroyTotem(self.frame, totemFire)
+end
+
+-- Set cooldown based on the deployed totem
+function AutoBarButtonTotemFire:UpdateCooldown()
+	local itemType = self.frame:GetAttribute("type")
+	if (itemType and not self.parentBar.faded) then
+		local enabled = 1
+		local _, _totemName, start, duration = GetTotemInfo(totemFire)
+
+		if (start and duration and enabled and start > 0 and duration > 0) then
+			self.frame.cooldown:Show() -- ToDo: necessary?
+			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		else
+			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
+		end
+
+		local popupHeader = self.frame.popupHeader
+		if (popupHeader and popupHeader:IsShown()) then
+			for _, popupButton in pairs(popupHeader.popupButtonList) do
+				popupButton:UpdateCooldown()
+			end
+		end
+	end
+end
+
+
+local AutoBarButtonTotemWater = Class(AutoBarButton)
 AutoBar.Class["AutoBarButtonTotemWater"] = AutoBarButtonTotemWater
 
 function AutoBarButtonTotemWater:init(parentBar, buttonDB)
 	AutoBarButtonTotemWater.super.init(self, parentBar, buttonDB)
-	self.totemSlot = totemWater
+
 	self:AddCategory("Spell.Totem.Water")
+end
+
+function AutoBarButtonTotemWater:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+	AutoBarButtonTotemWater.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+
+	DestroyTotem(self.frame, totemWater)
+end
+
+-- Set cooldown based on the deployed totem
+function AutoBarButtonTotemWater:UpdateCooldown()
+	local itemType = self.frame:GetAttribute("type")
+	if (itemType and not self.parentBar.faded) then
+		local enabled = 1
+		local _, _totemName, start, duration = GetTotemInfo(totemWater)
+
+		if (start and duration and enabled and start > 0 and duration > 0) then
+			self.frame.cooldown:Show() -- ToDo: necessary?
+			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		else
+			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
+		end
+
+		local popupHeader = self.frame.popupHeader
+		if (popupHeader and popupHeader:IsShown()) then
+			for _, popupButton in pairs(popupHeader.popupButtonList) do
+				popupButton:UpdateCooldown()
+			end
+		end
+	end
+end
+
+
+local AutoBarButtonTotem = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonTotem"] = AutoBarButtonTotem
+
+function AutoBarButtonTotem:init(parentBar, buttonDB)
+	AutoBarButtonTotem.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.Totem.Air")
+	self:AddCategory("Spell.Totem.Earth")
+	self:AddCategory("Spell.Totem.Fire")
+	self:AddCategory("Spell.Totem.Water")
+end
+
+
+local AutoBarButtonPortals = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonPortals"] = AutoBarButtonPortals
+
+function AutoBarButtonPortals:init(parentBar, buttonDB)
+	AutoBarButtonPortals.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.Portals")
+	if (buttonDB.hearth_include_ancient_dalaran and AutoBar.CLASS == "MAGE") then
+		self:AddCategory("Spell.AncientDalaranPortals")
+	end
 end
 
 
@@ -2196,6 +2504,33 @@ function AutoBarButtonWaterBuff:init(parentBar, buttonDB)
 end
 
 
+local AutoBarButtonGuildSpell = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonGuildSpell"] = AutoBarButtonGuildSpell
+
+function AutoBarButtonGuildSpell:init(parentBar, buttonDB)
+	AutoBarButtonGuildSpell.super.init(self, parentBar, buttonDB)
+
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
+
+	self:AddCategory("Spell.Guild")
+end
+
+local AutoBarButtonRacial = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonRacial"] = AutoBarButtonRacial
+
+function AutoBarButtonRacial:init(parentBar, buttonDB)
+	AutoBarButtonRacial.super.init(self, parentBar, buttonDB)
+
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
+
+	self:AddCategory("Spell.Racial")
+end
+
+
 if (LE_EXPANSION_LEVEL_CURRENT >= LE_EXPANSION_WRATH_OF_THE_LICH_KING) then
 
 	local AutoBarButtonMillHerbs = Class(AutoBarButton)
@@ -2298,15 +2633,6 @@ else
 
 	end
 
-	local AutoBarButtonGuildSpell = Class(AutoBarButton)
-	AutoBar.Class["AutoBarButtonGuildSpell"] = AutoBarButtonGuildSpell
-
-	function AutoBarButtonGuildSpell:init(parentBar, buttonDB)
-		AutoBarButtonGuildSpell.super.init(self, parentBar, buttonDB)
-
-		self:AddCategory("Spell.Guild")
-	end
-
 	local AutoBarButtonSunsongRanch = Class(AutoBarButton)
 	AutoBar.Class["AutoBarButtonSunsongRanch"] = AutoBarButtonSunsongRanch
 
@@ -2368,23 +2694,19 @@ else
 
 		if(buttonDB.show_ornamental == nil) then buttonDB.show_ornamental = true end
 
-		if(buttonDB.show_ornamental == true) then
-			AutoBarCategoryList["Muffin.Toys.Companion Pet.Ornamental"].only_favourites = false
-			self:AddCategory("Muffin.Toys.Companion Pet.Ornamental")
-		end
-
 		self:AddCategory("Muffin.Battle Pet Items.Level")
 		self:AddCategory("Muffin.Battle Pet Items.Upgrade")
 		self:AddCategory("Muffin.Battle Pet Items.Bandages")
 		self:AddCategory("Muffin.Battle Pet Items.Pet Treat")
 
-		if AutoBarCategoryList["Macro.BattlePet.Journal"] then
-			self:AddCategory("Macro.BattlePet.Journal")
-		end
-
 		AutoBarCategoryList["Muffin.Toys.Pet Battle"].only_favourites = false
 		self:AddCategory("Muffin.Toys.Pet Battle")
 		self:AddCategory("Spell.Pet Battle")
+
+		if(buttonDB.show_ornamental == true) then
+			AutoBarCategoryList["Muffin.Toys.Companion Pet.Ornamental"].only_favourites = false
+			self:AddCategory("Muffin.Toys.Companion Pet.Ornamental")
+		end
 
 	end
 
@@ -2668,6 +2990,7 @@ else
 		self:AddCategory("Macro.BattlePet.SummonRandom")
 		self:AddCategory("Macro.BattlePet.DismissPet")
 		self:AddCategory("Macro.BattlePet.SummonRandomFave")
+		self:AddCategory("Spell.Pet Battle")
 
 		self:Refresh(parentBar, buttonDB)
 	end

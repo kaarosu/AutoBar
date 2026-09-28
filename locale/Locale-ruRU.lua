@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Russian translation by StingerSoft (Eritnull aka Шептун)
@@ -258,6 +258,9 @@ if (GetLocale() == "ruRU") then
 		["AutoBarButtonWater"] = "Вода",
 		["AutoBarButtonWaterBuff"] = "Вода с Баффом",
 
+		["AutoBarButtonShapeshift"] = "Смена облика",
+		["AutoBarButtonTotem"] = "Тотемы",
+		["AutoBarButtonPortals"] = "Порталы",
 		["AutoBarButtonBear"] = "Медведь",
 		["AutoBarButtonBoomkinTree"] = "Древо Жизни / Лунный совух",
 		["AutoBarButtonCat"] = "Кошка",

@@ -55,6 +55,28 @@ function AB.InitializeCategories()
 		"*", code.get_spell_name_by_name("Shadowmeld"),
 	})
 
+	AutoBarCategoryList["Spell.Racial"] = SpellsCategory:new("Spell.Racial", spellIconList["Shadowmeld"],
+	{
+		-- Dwarf & Gnome & Human & Night Elf & Draenei & Worgen
+		"*", code.get_spell_name_by_name("Stoneform"),
+		"*", code.get_spell_name_by_name("Escape Artist"),
+		"*", code.get_spell_name_by_name("Every Man for Himself"),
+		"*", code.get_spell_name_by_name("Shadowmeld"),
+		"*", code.get_spell_name_by_name("Gift of the Naaru"),
+		"*", code.get_spell_name_by_name("Darkflight"),
+
+		-- Orc & Tauren & Troll & Undead & Blood Elf & Goblin
+		"*", code.get_spell_name_by_name("Blood Fury"),
+		"*", code.get_spell_name_by_name("War Stomp"),
+		"*", code.get_spell_name_by_name("Berserking"),
+		"*", code.get_spell_name_by_name("Will of the Forsaken"),
+		"*", code.get_spell_name_by_name("Cannibalize"),
+		"*", code.get_spell_name_by_name("Arcane Torrent"),
+		"*", code.get_spell_name_by_name("Rocket Jump"),
+		"*", code.get_spell_name_by_name("Rocket Barrage"),
+	})
+	AutoBarCategoryList["Spell.Racial"].first_to_last = true
+
 	AutoBarCategoryList["Spell.Aspect"] = SpellsCategory:new("Spell.Aspect", spellIconList["Aspect of the Cheetah"],
 	{
 		"HUNTER", code.get_spell_name_by_name("Aspect of the Cheetah"),
@@ -317,18 +339,21 @@ function AB.InitializeCategories()
 	AutoBarCategoryList["Spell.Charge"] = SpellsCategory:new( "Spell.Charge", spellIconList["Charge"],
 	{
 		"DEATHKNIGHT", code.get_spell_name_by_name("Death Grip"),
+		"HUNTER", code.get_spell_name_by_name("Disengage"),
+		"MAGE", code.get_spell_name_by_name("Blink"),
 		"ROGUE", code.get_spell_name_by_name("Shadowstep"),
 		"WARRIOR", code.get_spell_name_by_name("Charge"),
 		"WARRIOR", code.get_spell_name_by_name("Intercept"),
-
 	})
 
 	AutoBarCategoryList["Spell.ER"] = SpellsCategory:new( "Spell.ER", spellIconList["Charge"],
 	{
+		"DEATHKNIGHT", code.get_spell_name_by_name("Anti-Magic Shell"),
+		"DEATHKNIGHT", code.get_spell_name_by_name("Icebound Fortitude"),
 		"DRUID", code.get_spell_name_by_name("Frenzied Regeneration"),
 		"HUNTER", code.get_spell_name_by_name("Feign Death"),
-		"HUNTER", code.get_spell_name_by_name("Disengage"),
 		"MAGE", code.get_spell_name_by_name("Ice Block"),
+		"PALADIN", code.get_spell_name_by_name("Divine Shield"),
 		"PALADIN", code.get_spell_name_by_name("Lay on Hands"),
 		"ROGUE", code.get_spell_name_by_name("Vanish"),
 		"WARRIOR", code.get_spell_name_by_name("Last Stand"),
@@ -338,9 +363,11 @@ function AB.InitializeCategories()
 	{
 		"DEATHKNIGHT", code.get_spell_name_by_name("Strangulate"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Mind Freeze"),
+		"MAGE", code.get_spell_name_by_name("Counterspell"),
+		"PALADIN", code.get_spell_name_by_name("Rebuke"),
 		"ROGUE", code.get_spell_name_by_name("Kick"),
-		"SHAMAN", code.get_spell_name_by_name("Earth Shock"),
-
+		"SHAMAN", code.get_spell_name_by_name("Wind Shear"),
+		"WARRIOR", code.get_spell_name_by_name("Pummel"),
 	})
 
 	AutoBarCategoryList["Spell.CatForm"] = SpellsCategory:new( "Spell.CatForm", spellIconList["Charge"],

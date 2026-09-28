@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Courtesy of PDI175, lostcup
@@ -258,6 +258,9 @@ if (GetLocale() == "zhCN") then
 		["AutoBarButtonWater"] = "水",
 		["AutoBarButtonWaterBuff"] = "增益: 水",
 
+		["AutoBarButtonShapeshift"] = "变形",
+		["AutoBarButtonTotem"] = "图腾",
+		["AutoBarButtonPortals"] = "传送门",
 		["AutoBarButtonBear"] = "熊",
 		["AutoBarButtonBoomkinTree"] = "生命之树 / 枭兽",
 		["AutoBarButtonCat"] = "猎豹",

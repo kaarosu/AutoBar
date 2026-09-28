@@ -65,9 +65,9 @@ end
 ---@param p_list table
 ---@return table
 function code.make_set(p_list)
-   local set = {}
-   for _, l in ipairs(p_list) do set[l] = true end
-   return set
+	local set = {}
+	for _, l in ipairs(p_list) do set[l] = true end
+	return set
 end
 
 
@@ -79,21 +79,12 @@ function code.class_uses_mana(p_class_name)
 
 end
 
---[[ function code.class_in_list(p_class_name, ...)
-	local list = {...}
-
-	for _i, v in ipairs(list) do
-		if (p_class_name == v) then
-			return true;
-		end
-	end
-
-	return false;
-
-end ]]
 
 
 -- All global data will be a child of this table
+local ver_string, _, _, toc_version = GetBuildInfo()
+local is_forever = (toc_version and tonumber(toc_version) >= 16000 and tonumber(toc_version) < 17000) or false
+
 AutoBarGlobalDataObject = {
 	TYPE_MACRO_TEXT = 1,
 	TYPE_TOY = 2,
@@ -105,22 +96,24 @@ AutoBarGlobalDataObject = {
 
 	profile = {},
 
+	is_forever_wow = is_forever,
 	is_mainline_wow = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE),
 	is_vanilla_wow = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC),
 	is_bcc_wow = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC),
 	is_wrath_wow = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC),
-	is_mop_wow = (WOW_PROJECT_ID == WOW_PROJECT_MISTS_CLASSIC),
+	is_cata_wow = (WOW_PROJECT_ID == (WOW_PROJECT_CATACLYSM_CLASSIC or 14)),
+	is_mop_wow = (WOW_PROJECT_ID == (WOW_PROJECT_MISTS_OF_PANDARIA_CLASSIC or 19)),
 
 	default_button_width = 36,
 	default_button_height = 36,
 
-	MAX_BAG_SLOTS = Constants.InventoryConstants.NumBagSlots + (Constants.InventoryConstants.NumReagentBagSlots or 0)
 }
 
-local ver_string = GetBuildInfo()
-local api_version_temp = strsplittable(".", ver_string)
+local api_version_temp = {strsplit(".", ver_string)}
 AutoBarGlobalDataObject.API_VERSION = tonumber(api_version_temp[1])
 AutoBarGlobalDataObject.API_SUBVERSION = tonumber(api_version_temp[2])
+
+AutoBarGlobalDataObject.MAX_BAG_SLOTS = (Constants and Constants.InventoryConstants and Constants.InventoryConstants.NumBagSlotsPlusReagentBagSlots) or NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4
 
 if(AutoBarGlobalDataObject.API_VERSION >= 10) then	-- Dragonflight+
 	AutoBarGlobalDataObject.default_button_width = 45
@@ -132,6 +125,8 @@ end
 AutoBarGlobalDataObject.spell_name_list = {}
 -- List of [spellName] = <GetSpellInfo Icon>
 AutoBarGlobalDataObject.spell_icon_list = {}
+-- List of [spellName] = spell_id
+AutoBarGlobalDataObject.spell_id_list = {}
 
 AutoBarGlobalDataObject.set_mana_users = code.make_set{"DRUID", "EVOKER", "HUNTER", "MAGE", "MONK", "PRIEST", "PALADIN", "SHAMAN", "WARLOCK"}
 
@@ -236,27 +231,20 @@ function code.ToyGUID(p_toy_id)
 	return guid;
 end
 
---[[ function AB.BPetGUID(p_bpet_id)
-
-	local guid = "bpet:" .. p_bpet_id;
-
-	return guid;
-end ]]
-
 local macro_text_guid_index = 0;
-function code.MacroTextGUID(_p_macro_text)	--TODO: We're not using the text?
-
+-- Generates a sequential GUID string for macro text entries.
+-- The macro text itself is not hashed; IDs are assigned in registration order.
+function code.MacroTextGUID(_p_macro_text)
 	macro_text_guid_index = macro_text_guid_index + 1
 	local guid = "macrotext:" .. macro_text_guid_index;
-
 	return guid;
 end
 
 
 
---TODO: Memoize? How often is this called?
+-- Called infrequently (on bag/toy updates); memoization not warranted.
 function code.GetIconForToyID(p_toy_id)
-	local item_id = tonumber(p_toy_id)	--TODO: Is this needed?
+	local item_id = tonumber(p_toy_id)	-- defensive: callers may pass strings
 
 	if(not item_id) then
 		return nil
@@ -271,18 +259,21 @@ function code.GetIconForToyID(p_toy_id)
 	return texture;
 end
 
---TODO: Memoize? How often is this called?
-function code.GetIconForItemID(p_item_id)	--TODO: Calls into this seem to always tonumber, is that necessary?
+-- Called infrequently (on bag/toy updates); memoization not warranted.
+-- @param p_item_id number|string  item ID; string inputs are handled by the underlying API.
+function code.GetIconForItemID(p_item_id)
+
+	local getItemInfoInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+	local ii_texture = getItemInfoInstant and select(5, getItemInfoInstant(p_item_id))
+	if ii_texture then
+		return ii_texture
+	end
 
 	local i_texture = select(10, code.GetItemInfo(p_item_id))
-
----@diagnostic disable-next-line: deprecated
-	local ii_texture = select(5, GetItemInfoInstant(p_item_id))
-
-	return ii_texture or i_texture;
+	return i_texture
 end
 
---TODO: Document what this is for
+-- Strips dots, quotes, and spaces from a string to produce a valid WoW frame/key name.
 function code.GetValidatedName(p_name)
 	local name = p_name:gsub("%.", "")
 	name = name:gsub("\"", "")
@@ -291,33 +282,12 @@ function code.GetValidatedName(p_name)
 end
 
 
--- local usable_items_override_set = code.make_set{
--- 122484,	--Blackrock foundry spoils
--- 71715,	--A Treatise on Strategy
--- 113258,  --Blingtron 5000 Gift package
--- 132892,  --Blingtron 6000 Gift package
-
--- 150924, -- Greater Tribute of the Broken Isles
-
--- 118529, -- Cache of Highmaul Treasures
--- }
-
---local is_usable_item_cache = {}
-
---TODO: It would be nice to get this working, but IsUsableItem seems useless
+-- IsUsableItem() from the WoW API is unreliable for our purposes; always treat items as usable.
 function code.IsUsableItem(p_item_id)
-
 	if(p_item_id == nil) then
 		return nil;
 	end
-
 	return true;
-
---	local is_usable, not_enough_mana = IsUsableItem(p_item_id);
-
---	is_usable_item_cache[p_item_id] = is_usable or is_usable_item_cache[p_item_id] or usable_items_override_set[p_item_id];
-
---	return is_usable_item_cache[p_item_id], not_enough_mana;
 end
 
 function code.ClearNormalTexture(p_frame)
@@ -329,21 +299,6 @@ function code.ClearNormalTexture(p_frame)
 end
 
 
---[[ function AB.FrameInsp(p_frame)
-
-	local frame = p_frame
-
-	print("Type:", frame:GetAttribute("type"),"type1:", frame:GetAttribute("type1"), "type2:", frame:GetAttribute("type2"), "ItemID:", frame:GetAttribute("itemID"), "Category:", frame:GetAttribute("category") )
-	print("Item:", frame:GetAttribute("item"))
-	print("State:", frame:GetAttribute("state"))
-	print("Attribute:", frame:GetAttribute("attribute"))
-	print("Action:", frame:GetAttribute("action"),"Action1:", frame:GetAttribute("action1"), "Action2:", frame:GetAttribute("action2"), "ActionPage:", frame:GetAttribute("actionpage"))
-	print("Macro:", frame:GetAttribute("macro"), "MacroText:", frame:GetAttribute("macrotext"))
-	print("Spell:", frame:GetAttribute("spell"), "Spell1:", frame:GetAttribute("spell1"), "Spell2:", frame:GetAttribute("spell2"))
-	print("Unit:", frame:GetAttribute("unit"), "HelpButton:", frame:GetAttribute("helpbutton"), "harmbutton:", frame:GetAttribute("harmbutton"))
-
-end
- ]]
 
 
 ---@param p_spell_id number
@@ -356,21 +311,21 @@ function code.cache_spell_data(p_spell_id, p_spell_name)
 		icon = 628678;
 	end
 
-	if(name == nil) then
-		code.log_warning("Invalid Spell ID:" .. p_spell_id .. " : " .. (p_spell_name or "Unknown"));
-	else
-		local is_passive = C_Spell.IsSpellPassive(p_spell_id)
-		if (is_passive) then
-			code.log_warning("Passive Spell:", p_spell_id, " ", (p_spell_name or "Unknown"))
-		elseif (is_passive == nil) then
-			code.log_warning("Passive Spell is null:", p_spell_id, " ", (p_spell_name or "Unknown"))
-		end
-
-		AutoBarGlobalDataObject.spell_name_list[p_spell_name] = name;
-		AutoBarGlobalDataObject.spell_icon_list[p_spell_name] = icon;
+	if (not AutoBarGlobalDataObject.spell_id_list) then
+		AutoBarGlobalDataObject.spell_id_list = {}
+	end
+	if (p_spell_name and p_spell_id) then
+		AutoBarGlobalDataObject.spell_id_list[p_spell_name] = p_spell_id
 	end
 
-
+	if (name) then
+		AutoBarGlobalDataObject.spell_name_list[p_spell_name] = name;
+		AutoBarGlobalDataObject.spell_icon_list[p_spell_name] = icon;
+	else
+		if (not AutoBarGlobalDataObject.spell_name_list[p_spell_name]) then
+			AutoBarGlobalDataObject.spell_name_list[p_spell_name] = p_spell_name
+		end
+	end
 end
 
 function code.get_spell_name_by_name(p_spell_name)
@@ -379,9 +334,7 @@ function code.get_spell_name_by_name(p_spell_name)
 		return AutoBarGlobalDataObject.spell_name_list[p_spell_name]
 	end
 
-	code.log_warning("Unknown Spell Name:" .. (p_spell_name or "nil"))
-
-	return nil
+	return p_spell_name
 end
 
 function code.get_spell_icon_by_name(p_spell_name)
@@ -389,8 +342,6 @@ function code.get_spell_icon_by_name(p_spell_name)
 	if (AutoBarGlobalDataObject.spell_icon_list[p_spell_name]) then
 		return AutoBarGlobalDataObject.spell_icon_list[p_spell_name]
 	end
-
-	code.log_warning("Unknown Spell Name:" .. (p_spell_name or "nil"))
 
 	return nil
 end
@@ -424,11 +375,6 @@ function code.add_profile_data(p_name, p_time)
 	prof[p_name].avg_time = prof[p_name].total_time / prof[p_name].calls
 
 end
-
-function code.RegisterForClicks(p_frame)
-	p_frame:RegisterForClicks("AnyUp", "AnyDown")
-end
-
 
 function code.GetItemCount(p_item_info, p_include_bank, p_include_uses, p_include_reagent_bank)
 
@@ -589,34 +535,137 @@ end
 -- Support multiple API versions
 
 AB.GetSpellInfo = function (p_identifier)
-	local si = C_Spell.GetSpellInfo(p_identifier)
-	if(not si) then
-		return nil
+	local identifier = p_identifier
+	if type(identifier) == "string" and AutoBarGlobalDataObject.spell_id_list and AutoBarGlobalDataObject.spell_id_list[identifier] then
+		identifier = AutoBarGlobalDataObject.spell_id_list[identifier]
 	end
 
-	return si.name, nil, si.iconID, si.castTime, si.minRange, si.maxRange, si.spellID
+	if C_Spell and C_Spell.GetSpellInfo then
+		local si = C_Spell.GetSpellInfo(identifier)
+		if (not si and identifier ~= p_identifier) then
+			si = C_Spell.GetSpellInfo(p_identifier)
+		end
+		if(not si) then
+			return nil
+		end
+		return si.name, nil, si.iconID, si.castTime, si.minRange, si.maxRange, si.spellID
+	elseif GetSpellInfo then
+		local name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(identifier)
+		if (not name and identifier ~= p_identifier) then
+			name, rank, icon, castTime, minRange, maxRange, spellID = GetSpellInfo(p_identifier)
+		end
+		return name, rank, icon, castTime, minRange, maxRange, spellID
+	end
+	return nil
 end
 
 local function GetSpellCooldown_hack(p_identifier)
-	local sc = C_Spell.GetSpellCooldown(p_identifier)
-	if(not sc) then
+	if C_Spell and C_Spell.GetSpellCooldown then
+		local sc = C_Spell.GetSpellCooldown(p_identifier)
+		if(not sc) then
+			return nil
+		end
+		return sc.startTime, sc.duration, sc.isEnabled, sc.modRate
+	elseif GetSpellCooldown then
+		return GetSpellCooldown(p_identifier)
+	end
+	return nil
+end
+AB.GetSpellCooldown = (C_Spell and C_Spell.GetSpellCooldown and GetSpellCooldown_hack) or GetSpellCooldown	---@diagnostic disable-line: deprecated
+
+AB.GetItemCooldown = (C_Container and C_Container.GetItemCooldown) or GetItemCooldown	---@diagnostic disable-line: deprecated
+
+AB.GetSpellCastCount = function(spellIdentifier)
+	if C_Spell and C_Spell.GetSpellCastCount then
+		return C_Spell.GetSpellCastCount(spellIdentifier) or 0
+	elseif GetSpellCount then
+		return GetSpellCount(spellIdentifier) or 0
+	end
+	return 0
+end
+
+AB.IsSpellUsable = function(spellIdentifier)
+	if C_Spell and C_Spell.IsSpellUsable then
+		return C_Spell.IsSpellUsable(spellIdentifier)
+	elseif IsUsableSpell then
+		return IsUsableSpell(spellIdentifier)
+	end
+	return true, false
+end
+
+code.GetSpellTexture = (C_Spell and C_Spell.GetSpellTexture) or GetSpellTexture	---@diagnostic disable-line: deprecated
+
+AB.SetCooldown = function(cooldownFrame, spellIdentifier, fallbackStart, fallbackDuration, fallbackEnabled)
+	if C_Spell and C_Spell.GetSpellCooldownDuration and cooldownFrame.SetCooldownFromDurationObject then
+		local durationObj = C_Spell.GetSpellCooldownDuration(spellIdentifier)
+		if durationObj then
+			cooldownFrame:SetCooldownFromDurationObject(durationObj)
+			return
+		end
+	end
+	CooldownFrame_Set(cooldownFrame, fallbackStart or 0, fallbackDuration or 0, fallbackEnabled or 0)
+end
+
+AB.GetContainerNumSlots = (C_Container and C_Container.GetContainerNumSlots) or GetContainerNumSlots
+AB.GetContainerItemID = (C_Container and C_Container.GetContainerItemID) or GetContainerItemID
+AB.GetContainerItemLink = (C_Container and C_Container.GetContainerItemLink) or GetContainerItemLink
+
+AB.GetAddOnMetadata = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+
+AB.GetItemSpell = (C_Item and C_Item.GetItemSpell) or GetItemSpell	---@diagnostic disable-line: deprecated
+
+AB.ItemHasRange = (C_Item and C_Item.ItemHasRange) or ItemHasRange
+AB.SpellHasRange = (C_Spell and C_Spell.SpellHasRange) or SpellHasRange
+AB.IsItemInRange = (C_Item and C_Item.IsItemInRange) or IsItemInRange
+AB.IsSpellInRange = (C_Spell and C_Spell.IsSpellInRange) or IsSpellInRange
+
+AB.GetSpellTabInfo = function(index)
+	if C_SpellBook and C_SpellBook.GetSpellBookSkillLineInfo then
+		local info = C_SpellBook.GetSpellBookSkillLineInfo(index)
+		if info then
+			return info.name, info.iconID, info.itemIndexOffset, info.numSpellBookItems, info.isGuild, info.offSpecID
+		end
 		return nil
 	end
-
-	return sc.startTime, sc.duration, sc.isEnabled, sc.modRate
+	return GetSpellTabInfo(index)
 end
-AB.GetSpellCooldown = GetSpellCooldown or GetSpellCooldown_hack	---@diagnostic disable-line: deprecated
 
+AB.GetSpellBookItemName = function(index, bookType)
+	if C_SpellBook and C_SpellBook.GetSpellBookItemName then
+		if type(bookType) == "string" then
+			bookType = bookType == "spell" and Enum.SpellBookSpellBank.Player or Enum.SpellBookSpellBank.Pet
+		end
+		return C_SpellBook.GetSpellBookItemName(index, bookType)
+	end
+	return GetSpellBookItemName(index, bookType)
+end
 
-AB.GetContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
-AB.GetContainerItemID = GetContainerItemID or C_Container.GetContainerItemID
-AB.GetContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
+AB.GetContainerItemInfo = function(bag, slot)
+	if C_Container and C_Container.GetContainerItemInfo then
+		local info = C_Container.GetContainerItemInfo(bag, slot)
+		if info then
+			return info.iconFileID, info.itemCount, info.isLocked, info.quality, info.isReadable, info.hasLoot, info.hyperlink, info.isFiltered, info.hasNoValue, info.itemID, info.isBound
+		end
+		return nil
+	end
+	if GetContainerItemInfo then
+		return GetContainerItemInfo(bag, slot)
+	end
+	return nil
+end
 
-AB.GetAddOnMetadata = C_AddOns.GetAddOnMetadata
+AB.PickupContainerItem = (C_Container and C_Container.PickupContainerItem) or PickupContainerItem
 
-AB.GetItemSpell = GetItemSpell or C_Item.GetItemSpell	---@diagnostic disable-line: deprecated
-
-
+AB.PickupSpellBookItem = function(spellNameOrId)
+	if C_SpellBook and C_SpellBook.PickupSpellBookItem then
+		local name, _, _, _, _, _, spellID = AB.GetSpellInfo(spellNameOrId)
+		if spellID then
+			PickupSpell(spellID)
+		end
+	else
+		PickupSpellBookItem(spellNameOrId)
+	end
+end
 
 if (AutoBarGlobalDataObject.is_mainline_wow) then
 -------------------------------------------------------------------
@@ -637,7 +686,7 @@ if (AutoBarGlobalDataObject.is_mainline_wow) then
 		if (mdc[p_id] == nil or mdc[p_id].is_usable == nil) then
 			local name, spell_id, icon, _active, is_usable, _src, is_favourite, _faction_specific, faction_id, _is_hidden, is_collected, _mount_id =
 						 C_MountJournal.GetMountInfoByID(p_id)
-			local data = {}
+			local data = mdc[p_id] or {}
 			data.name = name
 			data.spell_id = spell_id
 			data.icon = icon
@@ -678,10 +727,6 @@ if (AutoBarGlobalDataObject.is_mainline_wow) then
 			return usable
 		end
 
-		function AB.ResetToyUsableCache()
-			wipe(cache)
-		end
-
 	end --do
 
 
@@ -697,9 +742,6 @@ else
 		return AutoBarSearch.registered_macro_text[p_guid];
 	end
 
-	function AB.ResetToyUsableCache()
-		-- Nothing to do
-	end
 end
 
 --#region PlayerHasToy deprecation/wrapper
@@ -721,15 +763,10 @@ end
 --#endregion PlayerHasToy deprecation/wrapper
 
 
---TODO: Remove this
-code.GetSpellLink = C_Spell.GetSpellLink
+code.GetSpellLink = (C_Spell and C_Spell.GetSpellLink) or GetSpellLink
 
 
 
 --#region GetItemInfo deprecation
-if GetItemInfo then 		---@diagnostic disable-line: deprecated
-	code.GetItemInfo = GetItemInfo		---@diagnostic disable-line: deprecated
-else
-	code.GetItemInfo = C_Item.GetItemInfo
-end
+code.GetItemInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 --#endregion GetItemInfo deprecation

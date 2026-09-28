@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Courtesy of Cinedelle
@@ -256,6 +256,9 @@ if (GetLocale() == "frFR") then
 		["AutoBarButtonWater"] = "Eau",
 		["AutoBarButtonWaterBuff"] = "Eau apportant un Buff",
 
+		["AutoBarButtonShapeshift"] = "Formes",
+		["AutoBarButtonTotem"] = "Totems",
+		["AutoBarButtonPortals"] = "Portails",
 		["AutoBarButtonBear"] = "Ours",
 		["AutoBarButtonBoomkinTree"] = "Arbre de vie / Sélénien",
 		["AutoBarButtonCat"] = "Chat",

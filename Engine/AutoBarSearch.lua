@@ -175,19 +175,24 @@ function Items:Add(itemList, buttonKey, category, slotIndex)
 		self.dataList[buttonKey] = {}
 	end
 	local buttonItems = self.dataList[buttonKey]
+	local categoryInfo = AutoBarCategoryList[category]
+	local is_first_to_last = categoryInfo and categoryInfo.first_to_last
+	local num_items = #itemList
+
 	for i, itemId in ipairs(itemList) do
+		local catIndex = is_first_to_last and (num_items - i + 1) or i
 		local itemData = buttonItems[itemId]
 		if (not itemData) then
 			itemData = {}
 			buttonItems[itemId] = itemData
 			itemData.category = category
 			itemData.slotIndex = slotIndex
-			itemData.categoryIndex = i
+			itemData.categoryIndex = catIndex
 			AutoBarSearch.space:Add(itemId, buttonKey)
-		elseif (slotIndex > itemData.slotIndex or (slotIndex == itemData.slotIndex and i >= itemData.categoryIndex)) then
+		elseif (slotIndex > itemData.slotIndex or (slotIndex == itemData.slotIndex and catIndex >= itemData.categoryIndex)) then
 			itemData.category = category
 			itemData.slotIndex = slotIndex
-			itemData.categoryIndex = i
+			itemData.categoryIndex = catIndex
 		end
 	end
 end
@@ -413,7 +418,7 @@ function AutoBarSearch.found:Delete(itemId, bag, slot, spell)
 					itemData[j] = itemData[j + 3]
 					itemData[j + 1] = itemData[j + 4]
 					itemData[j + 2] = itemData[j + 5]
-					j = j + 1
+					j = j + 3
 				until (not (itemData[j] or itemData[j + 1] or itemData[j + 2]))
 				break
 			end
@@ -813,6 +818,12 @@ function Sorted:SetBest(buttonKey)
 		end
 	end
 
+	-- Restore correct sorting from prior promotion
+	if (self.promotedList[buttonKey]) then
+		swap(sortedItems, 1, self.promotedList[buttonKey])
+		self.promotedList[buttonKey] = nil
+	end
+
 	-- Move arrangeOnUse item to front of list
 	local buttonData = AutoBar.char.buttonDataList[buttonKey]
 
@@ -832,12 +843,6 @@ function Sorted:SetBest(buttonKey)
 			-- Remove item if not found
 			--buttonData.arrangeOnUse = nil
 		end
-	end
-
-	-- Restore correct sorting
-	if (self.promotedList[buttonKey]) then
-		swap(sortedItems, 1, self.promotedList[buttonKey])
-		self.promotedList[buttonKey] = nil
 	end
 
 	for sortedIndex, sortedItemData in ipairs(sortedItems) do
@@ -928,16 +933,52 @@ function AutoBarSearch:RegisterSpell(p_spell_name, p_spell_id, p_no_spell_check,
 		AutoBarSearch.registered_spells[p_spell_name] = spellInfo
 	end
 
+	local spell_id = p_spell_id
+	if (not spell_id and C_Spell and C_Spell.GetSpellIDForSpellIdentifier) then
+		spell_id = C_Spell.GetSpellIDForSpellIdentifier(p_spell_name)
+	end
+	if (not spell_id and AutoBarGlobalDataObject.spell_id_list) then
+		spell_id = AutoBarGlobalDataObject.spell_id_list[p_spell_name]
+	end
+	spellInfo.spell_id = spell_id
+
 	if (p_spell_link) then
 		spellInfo.spell_link = p_spell_link
 	else
-		spellInfo.spell_link = code.GetSpellLink(p_spell_name)
-	end
+		local link = code.GetSpellLink(p_spell_name)
+		local isKnown = false
 
-	if (p_spell_id) then
-		spellInfo.spell_id = p_spell_id
-	else
-		spellInfo.spell_id = C_Spell.GetSpellIDForSpellIdentifier(p_spell_name)
+		-- Validate spell_id is within int32 range to avoid crashes in
+		-- Blizzard_DeprecatedSpellBook which wraps IsSpellKnown/IsSpellInSpellBook
+		-- with C_SpellBook calls that reject out-of-range IDs
+		local safeSpellId = spell_id
+		if (safeSpellId and (safeSpellId > 2147483647 or safeSpellId < -2147483648)) then
+			safeSpellId = nil
+		end
+
+		if (safeSpellId) then
+			local ok, result = pcall(function()
+				if (IsPlayerSpell and IsPlayerSpell(safeSpellId)) then return true end
+				if (IsSpellKnown and IsSpellKnown(safeSpellId)) then return true end
+				if (IsSpellKnownOrOverridesKnown and IsSpellKnownOrOverridesKnown(safeSpellId)) then return true end
+				if (C_Spell and C_Spell.IsSpellKnown and C_Spell.IsSpellKnown(safeSpellId)) then return true end
+				return false
+			end)
+			isKnown = (ok and result) or false
+		end
+
+		-- Fallback: check by name or link presence
+		if (not isKnown and link) then
+			isKnown = true
+		end
+
+		if (isKnown) then
+			spellInfo.spell_link = link or (spell_id and code.GetSpellLink(spell_id)) or (spell_id and ("spell:" .. spell_id)) or ("spell:" .. p_spell_name)
+		elseif (p_no_spell_check) then
+			spellInfo.spell_link = link or (spell_id and code.GetSpellLink(spell_id)) or (spell_id and ("spell:" .. spell_id)) or "spell:0"
+		else
+			spellInfo.spell_link = nil
+		end
 	end
 
 	spellInfo.no_spell_check = p_no_spell_check
@@ -1261,6 +1302,10 @@ end
 -- Scan the given bag.
 function AutoBarSearch:ScanBag(p_bag)
 	local slotList = self.bag_cache[p_bag]
+	if (not slotList) then
+		slotList = {}
+		self.bag_cache[p_bag] = slotList
+	end
 	local itemId, oldItemId
 	local nSlots = AB.GetContainerNumSlots(p_bag)
 

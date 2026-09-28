@@ -144,7 +144,7 @@ function AutoBar.Class.BasicButton:TooltipApply(button)
 		end
 		if (not button.TooltipHide) then
 			button.TooltipHide = AutoBar.Class.BasicButton.TooltipHide
-			SecureHandlerWrapScript(button, "OnLeave", button, [[ control:CallMethod("TooltipHide") ]])
+			button:HookScript("OnLeave", button.TooltipHide)
 		end
 		button:SetAttribute("showTooltip", true)
 	else
@@ -218,7 +218,7 @@ function AutoBar.Class.BasicButton:GetIconTexture(frame)
 	elseif (itemType == "spell") then
 		local spellName = frame:GetAttribute("spell")
 		if (spellName) then
-			texture = code.get_spell_icon_by_name_fast(spellName) or C_Spell.GetSpellTexture(spellName)
+			texture = code.get_spell_icon_by_name_fast(spellName) or code.GetSpellTexture(spellName)
 
 			-- Add a blue border if button is a spell
 			borderColor = borderBlue
@@ -229,7 +229,7 @@ function AutoBar.Class.BasicButton:GetIconTexture(frame)
 	if (not texture) then
 		local spellName = frame:GetAttribute("spell2")
 		if (spellName) then
-			texture = C_Spell.GetSpellTexture(spellName)
+			texture = code.GetSpellTexture(spellName)
 
 			-- Add a blue border if button is a spell
 			borderColor = borderBlue
@@ -251,14 +251,14 @@ function AutoBar.Class.BasicButton:UpdateCooldown()
 	if (itemType == "item") then
 		local item_id = self.frame:GetAttribute("itemId")
 		if (item_id) then
-			start, duration, enabled = C_Container.GetItemCooldown(item_id)
+			start, duration, enabled = AB.GetItemCooldown(item_id)
 			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
 		end
 	elseif (itemType == "toy") then
 		local item_guid = self.frame:GetAttribute("AutoBarGUID")
 		local item_data = AB.InfoFromGUID(item_guid)
 		if (item_data) then
-			start, duration, enabled = C_Container.GetItemCooldown(item_data.item_id)
+			start, duration, enabled = AB.GetItemCooldown(item_data.item_id)
 			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
 		end
 --	elseif (itemType == "macro") then --ToDo some day
@@ -266,10 +266,9 @@ function AutoBar.Class.BasicButton:UpdateCooldown()
 --			SecureCmdOptionParse()?
 	elseif (itemType == "spell") then
 		local spellName = self.frame:GetAttribute("spell")
-		local sc = C_Spell.GetSpellCooldown(spellName)
-		if(sc and sc.isActive) then
-			local cool_duration = C_Spell.GetSpellCooldownDuration(spellName)
-			self.frame.cooldown:SetCooldownFromDurationObject(cool_duration)
+		if (spellName) then
+			local start, duration, enabled = AB.GetSpellCooldown(spellName)
+			AB.SetCooldown(self.frame.cooldown, spellName, start, duration, enabled)
 		else
 			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
 		end
@@ -305,11 +304,11 @@ function AutoBar.Class.BasicButton:UpdateCount()
 --			elseif (itemType == "toy") then
 		elseif (itemType == "spell") then
 			local spellName = frame:GetAttribute("spell")
-			count1 = C_Spell.GetSpellCastCount(spellName) or 0
+			count1 = AB.GetSpellCastCount(spellName) or 0
 			if issecretvalue and issecretvalue(count1) then count1 = 0; end
 			local spellName2 = frame:GetAttribute("spell2")
 			if (spellName2) then
-				count2 = C_Spell.GetSpellCastCount(spellName2) or 0
+				count2 = AB.GetSpellCastCount(spellName2) or 0
 				if issecretvalue and issecretvalue(count2) then count2 = 0; end
 			end
 		end
@@ -356,7 +355,7 @@ function AutoBar.Class.BasicButton:UpdateUsable()
 		isUsable = code.IsUsableItem(itemId)
 		if (isUsable) then
 			-- Single use in combat potion hack
-			local _, _, enabled = C_Container.GetItemCooldown(itemId)
+			local _, _, enabled = AB.GetItemCooldown(itemId)
 			if (not enabled) then
 				isUsable = false
 			end
@@ -364,7 +363,7 @@ function AutoBar.Class.BasicButton:UpdateUsable()
 	elseif (itemType == "spell") then
 		local spellName = frame:GetAttribute("spell")
 		local notEnoughMana
-		isUsable, notEnoughMana = C_Spell.IsSpellUsable(spellName)
+		isUsable, notEnoughMana = AB.IsSpellUsable(spellName)
 		isUsable = isUsable and (not notEnoughMana)
 	elseif (itemType == "macro") then
 		isUsable = true

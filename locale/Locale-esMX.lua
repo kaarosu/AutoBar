@@ -1,4 +1,4 @@
-﻿--
+--
 -- AutoBar
 -- http://muffinmangames.com
 -- Courtesy of PDI175, lostcup
@@ -256,6 +256,9 @@ if (GetLocale() == "esMX") then
 		["AutoBarButtonWater"] = "Agua",
 		["AutoBarButtonWaterBuff"] = "Agua: Buff",
 
+		["AutoBarButtonShapeshift"] = "Cambio de forma",
+		["AutoBarButtonTotem"] = "Tótems",
+		["AutoBarButtonPortals"] = "Portales",
 		["AutoBarButtonBear"] = "Oso",
 		["AutoBarButtonBoomkinTree"] = "Arbol de Vida / Boomkin",
 		["AutoBarButtonCat"] = "Gato",

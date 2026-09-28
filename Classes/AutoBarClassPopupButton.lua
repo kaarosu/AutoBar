@@ -8,11 +8,9 @@
 --
 
 --GLOBALS: InCombatLockdown, GameTooltip, CreateFrame, SecureHandlerWrapScript
-local _, AB = ...
 
 local AutoBar = AutoBar
 local ABGData = AutoBarGlobalDataObject
-local code = AB.code	---@class ABCode
 
 local Class = AutoBar.Class.new_class
 local L = AutoBarGlobalDataObject.locale
@@ -83,18 +81,17 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	local popupHeader = self.popupHeader
 	local popupKeyHandler = self.popupKeyHandler
 	local popupButtonName = self:GetButtonFrameName(popupButtonIndex)
-	local frame = CreateFrame("Button", popupButtonName, popupKeyHandler or popupHeader, "ActionButtonTemplate SecureActionButtonTemplate SecureHandlerBaseTemplate")
+	local frame = CreateFrame("Button", popupButtonName, popupKeyHandler or popupHeader, "ActionButtonTemplate, SecureActionButtonTemplate, SecureHandlerBaseTemplate, SecureHandlerEnterLeaveTemplate")
 	self.frame = frame
 	frame.class = self
-	frame:SetMouseClickEnabled()
-	code.RegisterForClicks(frame)
-
+	frame:EnableMouse(true)
+	if (frame.SetMouseClickEnabled) then frame:SetMouseClickEnabled(true) end
+	if (frame.SetMouseMotionEnabled) then frame:SetMouseMotionEnabled(true) end
+	frame:RegisterForClicks("AnyUp", "AnyDown")
 	frame:SetFrameRef("popupHeader", popupHeader)
 	frame.popupHeader = popupHeader
-	frame:SetScript("OnEnter", funcOnEnter)
-	frame:SetScript("OnLeave", funcOnLeave)
-	SecureHandlerWrapScript(frame, "OnEnter", frame, [[ self:GetFrameRef("popupHeader"):Show() ]])
-	SecureHandlerWrapScript(frame, "OnLeave", frame, [[ self:GetFrameRef("popupHeader"):Hide() ]])
+	frame:HookScript("OnEnter", funcOnEnter)
+	frame:HookScript("OnLeave", funcOnLeave)
 
 	frame:ClearAllPoints()
 	frame:SetWidth(ABGData.default_button_width)
@@ -106,6 +103,44 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	frame.cooldown = _G[("%sCooldown"):format(popupButtonName)]
 	frame.macroName = _G[("%sName"):format(popupButtonName)]
 	frame.hotKey = _G[("%sHotKey"):format(popupButtonName)]
+	frame.normalTexture = frame:GetNormalTexture()
+
+	if frame.normalTexture then
+		frame.normalTexture:ClearAllPoints()
+		frame.normalTexture:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+		frame.normalTexture:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+	end
+	if frame.icon then
+		frame.icon:ClearAllPoints()
+		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+		frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+	end
+	frame.border = _G[("%sBorder"):format(popupButtonName)]
+	if frame.border then
+		frame.border:ClearAllPoints()
+		frame.border:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
+		frame.border:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+		frame.border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+		frame.border:SetBlendMode("ADD")
+	end
+	if frame.SlotBackground then frame.SlotBackground:Hide() end
+	if frame.SlotArt then frame.SlotArt:Hide() end
+
+	-- Clamp interaction textures in 11.0
+	local function clampTexture(tex)
+		if tex then
+			tex:ClearAllPoints()
+			tex:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+			tex:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+		end
+	end
+	if frame.GetNormalTexture then clampTexture(frame:GetNormalTexture()) end
+	if frame.GetPushedTexture then clampTexture(frame:GetPushedTexture()) end
+	if frame.GetHighlightTexture then clampTexture(frame:GetHighlightTexture()) end
+	if frame.GetCheckedTexture then clampTexture(frame:GetCheckedTexture()) end
+	if frame.CheckedTexture then clampTexture(frame.CheckedTexture) end
+	if frame.NewActionTexture then clampTexture(frame.NewActionTexture) end
+	if frame.SpellHighlightTexture then clampTexture(frame.SpellHighlightTexture) end
 	frame.count = _G[("%sCount"):format(popupButtonName)]
 	frame.flash = _G[("%sFlash"):format(popupButtonName)]
 	if (Masque) then
@@ -123,7 +158,7 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	end
 
 	frame.border = _G[("%sBorder"):format(popupButtonName)]
-
+	
 	if frame.Arrow then
 		frame.Arrow:Hide()
 	end

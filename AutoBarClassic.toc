@@ -1,7 +1,7 @@
-## Interface: 11509
+## Interface: 11507, 11508, 11509, 16001
 ## Title: AutoBarClassic
 ## Author: MuffinManKen, Toadkiller (Original code)
-## Version: 1.15.9.01
+## Version: 1.15.7.00
 ## Notes: Dynamic bars with buttons that automatically add potions, water, food and other items you specify into a button for use. Does not use action slots.
 ## Notes-ruRU: Динамические панели с кнопками, которые автоматически добавляют зелья, воду, пищу и другие предметы для котрых вы определяете кнопки для использования. Не использует слоты на панеле команд.
 ## Notes-koKR: 자동으로 물약, 음료, 음식등이 포함된 버튼을 제공하며 슬롯에 사용할 아이템을 별도로 추가할 수 있습니다. 이것은 액션 슬롯에 여유를 가져다 줄것입니다.
@@ -14,7 +14,7 @@
 ## X-Credits: Diablo for teaching us how to guzzle potions. Saien for first enabling guzzling in WoW.  Sayclub (Korean) | PDI175, lostcup (Chinese traditional and simplified) | Teodred, curexx (German), Cinedelle (French), shiftos (Spanish), StingerSoft (Russian)
 ## OptionalDeps: Ace3, Ace2, LibKeyBound-1.0, LibPeriodicTable-3.1, LibMMStickyFrames-2.0, LibDBIcon-1.0, OmniCC, Masque, MuffinLibPTSets
 ## X-Embeds: Ace2, LibKeyBound-1.0,  LibPeriodicTable-3.1, LibMMStickyFrames-2.0, MuffinLibPTSets
-## SavedVariables: AutoBarDB, AutoBarDB2
+## SavedVariables: AutoBarDB2
 
 # Libraries
 embeds.xml
@@ -34,8 +34,9 @@ classic/MuffinLibPTSets/LibPT-Muffin.Potions.lua
 classic/MuffinLibPTSets/LibPT-Muffin.Skill.Fishing.lua
 classic/MuffinLibPTSets/LibPT-Muffin.Stones.lua
 
+Config/AceGUIWidget-DragLink.lua
 
-AutoBarGlobals.lua
+Core/AutoBarGlobals.lua
 
 classic/CachedSpellData_classic.lua
 classic/whats_new.lua
@@ -54,25 +55,25 @@ locale/Locale-zhCN.lua
 locale/Locale-zhTW.lua
 locale/Locale-default.lua
 
-Bindings.lua
-
-AceGUIWidget-DragLink.lua
-
-Core.lua
+Core/Bindings.lua
 
 
-AutoBarDB.lua
-AutoBarOptions.lua
-AutoBarSearchUtil.lua
-AutoBarSearch.lua
-AutoBarClassBar.lua
-AutoBarClassBasicButton.lua
-AutoBarClassButton.lua
-AutoBarClassPopupButton.lua
-AutoBarButton.lua
-AutoBarCategory.lua
+Core/Core.lua
+
+
+Core/AutoBarDB.lua
+Config/AutoBarOptions.lua
+Engine/AutoBarSearchUtil.lua
+Engine/AutoBarSearch.lua
+Classes/AutoBarClassBar.lua
+Classes/AutoBarClassBasicButton.lua
+Classes/AutoBarClassButton.lua
+Classes/AutoBarClassPopupButton.lua
+Classes/AutoBarButton.lua
+Engine/AutoBarCategory.lua
 
 classic/ABCategoryData_classic.lua
 
-AutoBarConfig.lua
+Config/AutoBarConfig.lua
+
 
