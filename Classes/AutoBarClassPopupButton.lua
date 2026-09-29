@@ -9,6 +9,8 @@
 
 --GLOBALS: InCombatLockdown, GameTooltip, CreateFrame, SecureHandlerWrapScript
 
+local _, AB = ...
+
 local AutoBar = AutoBar
 local ABGData = AutoBarGlobalDataObject
 
@@ -81,8 +83,9 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	local popupHeader = self.popupHeader
 	local popupKeyHandler = self.popupKeyHandler
 	local popupButtonName = self:GetButtonFrameName(popupButtonIndex)
-	local frame = CreateFrame("Button", popupButtonName, popupKeyHandler or popupHeader, "ActionButtonTemplate, SecureActionButtonTemplate, SecureHandlerBaseTemplate, SecureHandlerEnterLeaveTemplate")
+	local frame = CreateFrame("Button", popupButtonName, popupKeyHandler or popupHeader, "AutoBarButtonTemplate")
 	self.frame = frame
+	self:InitializeVisuals(frame, popupButtonName)
 	frame.class = self
 	frame:EnableMouse(true)
 	if (frame.SetMouseClickEnabled) then frame:SetMouseClickEnabled(true) end
@@ -106,11 +109,17 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	frame.normalTexture = frame:GetNormalTexture()
 
 	if frame.normalTexture then
+		if (frame.normalTexture.SetDrawLayer) then
+			frame.normalTexture:SetDrawLayer("BACKGROUND", 0)
+		end
 		frame.normalTexture:ClearAllPoints()
 		frame.normalTexture:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
 		frame.normalTexture:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
 	end
 	if frame.icon then
+		if (frame.icon.SetDrawLayer) then
+			frame.icon:SetDrawLayer("BORDER", 0)
+		end
 		frame.icon:ClearAllPoints()
 		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 		frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
@@ -146,6 +155,8 @@ function AutoBar.Class.PopupButton:CreateButtonFrame()
 	if (Masque) then
 		local group = self.parentBar.frame.MasqueGroup
 		frame.MasqueButtonData = {
+			Normal = frame.normalTexture,
+			Backdrop = frame.SlotBackground,
 			Border = frame.border,
 			Cooldown = frame.cooldown,
 			Count = frame.count,
@@ -171,7 +182,7 @@ function AutoBar.Class.PopupButton:UpdateIcon()
 	frame:SetAttribute("icon", texture)
 
 	if (texture) then
-		frame.icon:SetTexture(texture)
+		AB.SetTextureOrAtlas(frame.icon, texture)
 		frame.icon:Show()
 		frame.tex = texture
 	else

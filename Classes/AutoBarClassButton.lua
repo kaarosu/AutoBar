@@ -258,8 +258,9 @@ end
 
 function AutoBar.Class.Button:CreateButtonFrame()
 	local name = self:GetButtonFrameName()
-	local frame = CreateFrame("Button", name, self.parentBar.frame, "ActionButtonTemplate, SecureActionButtonTemplate, SecureHandlerBaseTemplate, SecureHandlerEnterLeaveTemplate")
+	local frame = CreateFrame("Button", name, self.parentBar.frame, "AutoBarButtonTemplate")
 	self.frame = frame
+	self:InitializeVisuals(frame, name)
 
 	frame:ClearAllPoints()
 	frame:SetWidth(ABGData.default_button_width)
@@ -295,9 +296,12 @@ function AutoBar.Class.Button:CreateButtonFrame()
 	frame.hotKey = _G[("%sHotKey"):format(name)]
 	frame.count = _G[("%sCount"):format(name)]
 	frame.flash = _G[("%sFlash"):format(name)]
+	frame.normalTexture = frame:GetNormalTexture()
 	if (Masque) then
 		local group = self.parentBar.frame.MasqueGroup
 		frame.MasqueButtonData = {
+			Normal = frame.normalTexture,
+			Backdrop = frame.SlotBackground,
 			Border = frame.border,
 			Cooldown = frame.cooldown,
 			Count = frame.count,
@@ -308,14 +312,19 @@ function AutoBar.Class.Button:CreateButtonFrame()
 		}
 		group:AddButton(frame, frame.MasqueButtonData)
 	end
-	frame.normalTexture = frame:GetNormalTexture()
 	
 	if frame.normalTexture then
+		if (frame.normalTexture.SetDrawLayer) then
+			frame.normalTexture:SetDrawLayer("BACKGROUND", 0)
+		end
 		frame.normalTexture:ClearAllPoints()
 		frame.normalTexture:SetPoint("TOPLEFT", frame, "TOPLEFT", -2, 2)
 		frame.normalTexture:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
 	end
 	if frame.icon then
+		if (frame.icon.SetDrawLayer) then
+			frame.icon:SetDrawLayer("BORDER", 0)
+		end
 		frame.icon:ClearAllPoints()
 		frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 		frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
@@ -529,7 +538,7 @@ function AutoBar.Class.Button:UpdateIcon()
 	local texture, borderColor = self:GetIconTexture()
 
 	if (texture) then
-		frame.icon:SetTexture(texture)
+		AB.SetTextureOrAtlas(frame.icon, texture)
 		frame.icon:Show()
 		frame.tex = texture
 	else

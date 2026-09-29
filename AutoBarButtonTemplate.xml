@@ -1,0 +1,62 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<Button name="AutoBarButtonTemplate" inherits="SecureActionButtonTemplate, SecureHandlerBaseTemplate, SecureHandlerEnterLeaveTemplate" virtual="true">
+		<Size x="36" y="36"/>
+		<Layers>
+			<Layer level="BACKGROUND" textureSubLevel="-1">
+				<Texture name="$parentSlotBg" parentKey="SlotBackground">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="0" y="0"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+					</Anchors>
+					<Color r="0" g="0" b="0" a="0.6"/>
+				</Texture>
+			</Layer>
+			<Layer level="BORDER" textureSubLevel="0">
+				<Texture name="$parentIcon" parentKey="icon">
+					<Anchors>
+						<Anchor point="TOPLEFT" x="0" y="0"/>
+						<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="BORDER" textureSubLevel="1">
+				<Texture name="$parentBorder" parentKey="border" file="Interface\Buttons\UI-ActionButton-Border" hidden="true" alphaMode="ADD">
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<Texture name="$parentFlash" parentKey="flash" hidden="true"/>
+				<FontString name="$parentHotKey" parentKey="hotKey" inherits="NumberFontNormalSmallGray" justifyH="RIGHT">
+					<Anchors>
+						<Anchor point="TOPRIGHT" x="-2" y="-2"/>
+					</Anchors>
+				</FontString>
+				<FontString name="$parentCount" parentKey="count" inherits="NumberFontNormal" justifyH="RIGHT">
+					<Anchors>
+						<Anchor point="BOTTOMRIGHT" x="-2" y="2"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+			<Layer level="OVERLAY">
+				<FontString name="$parentName" parentKey="macroName" inherits="GameFontHighlightSmallOutline">
+					<Anchors>
+						<Anchor point="BOTTOM" x="0" y="2"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Cooldown name="$parentCooldown" parentKey="cooldown" inherits="CooldownFrameTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" x="0" y="0"/>
+					<Anchor point="BOTTOMRIGHT" x="0" y="0"/>
+				</Anchors>
+			</Cooldown>
+		</Frames>
+		<NormalTexture name="$parentNormalTexture" parentKey="normalTexture"/>
+		<PushedTexture file="Interface\Buttons\UI-Quickslot-Depress"/>
+		<HighlightTexture file="Interface\Buttons\ButtonHilight-Square" alphaMode="ADD"/>
+	</Button>
+</Ui>

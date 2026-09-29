@@ -83,7 +83,9 @@ end
 
 -- All global data will be a child of this table
 local ver_string, _, _, toc_version = GetBuildInfo()
-local is_forever = (toc_version and tonumber(toc_version) >= 16000 and tonumber(toc_version) < 17000) or false
+local is_forever = (toc_version and tonumber(toc_version) >= 16000 and tonumber(toc_version) < 17000)
+	or (ver_string and (ver_string:find("^1%.16") ~= nil or ver_string:lower():find("camelot") ~= nil or ver_string:lower():find("forever") ~= nil))
+	or false
 
 AutoBarGlobalDataObject = {
 	TYPE_MACRO_TEXT = 1,
@@ -97,8 +99,8 @@ AutoBarGlobalDataObject = {
 	profile = {},
 
 	is_forever_wow = is_forever,
-	is_mainline_wow = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE),
-	is_vanilla_wow = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC),
+	is_mainline_wow = (WOW_PROJECT_ID == WOW_PROJECT_MAINLINE) and not is_forever,
+	is_vanilla_wow = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC) or is_forever,
 	is_bcc_wow = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC),
 	is_wrath_wow = (WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC),
 	is_cata_wow = (WOW_PROJECT_ID == (WOW_PROJECT_CATACLYSM_CLASSIC or 14)),
@@ -683,8 +685,8 @@ if (AutoBarGlobalDataObject.is_mainline_wow) then
 
 	function AB.GetMountInfoByID(p_id)
 		local mdc = AutoBarGlobalDataObject.mount_data_cache_by_id
-		if (mdc[p_id] == nil or mdc[p_id].is_usable == nil) then
-			local name, spell_id, icon, _active, is_usable, _src, is_favourite, _faction_specific, faction_id, _is_hidden, is_collected, _mount_id =
+		if (mdc[p_id] == nil or mdc[p_id].name == nil) then
+			local name, spell_id, icon, _active, is_usable, _src, is_favourite, _faction_specific, faction_id, should_hide_on_char, is_collected, _mount_id =
 						 C_MountJournal.GetMountInfoByID(p_id)
 			local data = mdc[p_id] or {}
 			data.name = name
@@ -693,6 +695,7 @@ if (AutoBarGlobalDataObject.is_mainline_wow) then
 			data.is_favourite = is_favourite
 			data.is_collected = is_collected
 			data.faction_id = faction_id
+			data.should_hide_on_char = should_hide_on_char
 			data.is_usable = is_usable
 
 			mdc[p_id] = data;
@@ -770,3 +773,15 @@ code.GetSpellLink = (C_Spell and C_Spell.GetSpellLink) or GetSpellLink
 --#region GetItemInfo deprecation
 code.GetItemInfo = (C_Item and C_Item.GetItemInfo) or GetItemInfo
 --#endregion GetItemInfo deprecation
+
+function AB.SetTextureOrAtlas(textureObject, texture)
+	if (not textureObject) then return end
+	if (type(texture) == "string" and textureObject.SetAtlas) then
+		if ((C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(texture)) or texture:find("^Ping_")) then
+			textureObject:SetAtlas(texture)
+			return
+		end
+	end
+	textureObject:SetTexture(texture)
+	textureObject:SetTexCoord(0, 1, 0, 1)
+end

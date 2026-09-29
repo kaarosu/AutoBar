@@ -6,6 +6,8 @@
 	<Binding name="AutoBarButtonMount_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonBandages_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonCrafting_X"   				category="AutoBar "/>
+	<Binding name="AutoBarButtonCooking_X"   				category="AutoBar "/>
+	<Binding name="AutoBarButtonFirstAid_X"   				category="AutoBar "/>
 	<Binding name="AutoBarButtonHeal_X"							category="AutoBar "/>
 	<Binding name="AutoBarButtonRecovery_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonFood_X"							category="AutoBar "/>
@@ -36,6 +38,7 @@
 	<Binding name="AutoBarButtonTrinket2_X"					category="AutoBar "/>
 	<Binding name="AutoBarButtonPets_X"							category="AutoBar "/>
 	<Binding name="AutoBarButtonQuest_X"						category="AutoBar "/>
+	<Binding name="AutoBarButtonHousing_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonSpeed_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonStealth_X"						category="AutoBar "/>
 	<Binding name="AutoBarButtonSunsongRanch_X"				category="AutoBar "/>

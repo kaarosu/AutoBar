@@ -83,7 +83,7 @@ atl("ArchBtnShowSpells", "Show Spells")
 atl("Muffin.Misc.Quest", "Muffin.Misc.Quest");
 atl("Muffin.Mounts", "Muffin.Mounts");
 
-atl("AutoBarButtonRaidTarget", "Raid Targets")
+atl("AutoBarButtonRaidTarget", "Raid Targets & Markers")
 
 atl("AutoBarButtonMoonkin", "Moonkin")
 atl("AutoBarButtonTreeForm", "Tree")
@@ -157,14 +157,20 @@ atl("Summon A Random Fave Pet", "Summon Favourite Pet|n|cFFFFD100Summon a random
 atl("Dismiss Battle Pet", "Dismiss Battle Pet|n|cFFFFD100Dismiss your current battle pet|r")
 atl("Summon A Random Favourite Mount", "Summon Favourite Mount|n|cFFFFD100Summon a random mount from your list of favourites in the mount journal|r")
 
-atl("Raid 1","Raid Star")
-atl("Raid 2","Raid Circle")
-atl("Raid 3","Raid Diamond")
-atl("Raid 4","Raid Triangle")
-atl("Raid 5","Raid Moon")
-atl("Raid 6","Raid Square")
-atl("Raid 7","Raid X")
-atl("Raid 8","Raid Skull")
+atl("Raid 1","Raid Star|n|cFFFFD100Click: Mark target with Star|nCtrl-Click: Aim & place Star world marker|r")
+atl("Raid 2","Raid Circle|n|cFFFFD100Click: Mark target with Circle|nCtrl-Click: Aim & place Circle world marker|r")
+atl("Raid 3","Raid Diamond|n|cFFFFD100Click: Mark target with Diamond|nCtrl-Click: Aim & place Diamond world marker|r")
+atl("Raid 4","Raid Triangle|n|cFFFFD100Click: Mark target with Triangle|nCtrl-Click: Aim & place Triangle world marker|r")
+atl("Raid 5","Raid Moon|n|cFFFFD100Click: Mark target with Moon|nCtrl-Click: Aim & place Moon world marker|r")
+atl("Raid 6","Raid Square|n|cFFFFD100Click: Mark target with Square|nCtrl-Click: Aim & place Square world marker|r")
+atl("Raid 7","Raid X|n|cFFFFD100Click: Mark target with X|nCtrl-Click: Aim & place X world marker|r")
+atl("Raid 8","Raid Skull|n|cFFFFD100Click: Mark target with Skull|nCtrl-Click: Aim & place Skull world marker|r")
+atl("Clear Raid Target / Markers","Clear Markers|n|cFFFFD100Click: Clear target marker|nCtrl-Click: Clear all world markers|r")
+
+atl("Ping Attack","Ping: Attack|n|cFFFFD100Ping your current target to attack|r")
+atl("Ping Assist","Ping: Assist|n|cFFFFD100Ping your current target for help|r")
+atl("Ping Warning","Ping: Warning|n|cFFFFD100Ping your current target with a warning|r")
+atl("Ping On My Way","Ping: On My Way|n|cFFFFD100Ping your current target that you are on your way|r")
 
 atl("OnlyFavouriteHearth", "Only show favourite Hearth toys")
 atl("OpenableIncludeCraftKnowledge", "Include Craft Knowledge Items")
@@ -184,6 +190,7 @@ local quick_sets =
 	"Macro.BattlePet.DismissPet",
 	"Macro.BattlePet.SummonRandomFave",
 	"Macro.Raid Target",
+	"Macro.Ping",
 	"Muffin.Battle Pet Items.Bandages",
 	"Muffin.Battle Pet Items.Level",
 	"Muffin.Battle Pet Items.Pet Treat",
@@ -262,6 +269,11 @@ local quick_sets =
 	"AutoBarButtonShapeshift",
 	"AutoBarButtonTotem",
 	"AutoBarButtonPortals",
+	"AutoBarButtonCooking",
+	"AutoBarButtonFirstAid",
+	"Spell.First Aid",
+	"Spell.Cooking",
+	"Muffin.Food.Buff",
 }
 
 atl_table(quick_sets);

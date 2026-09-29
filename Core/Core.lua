@@ -181,6 +181,10 @@ function AutoBar:InitializeZero()
 	end
 	AutoBar.frame:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
 
+	AutoBar.frame:RegisterEvent("ZONE_CHANGED")
+	AutoBar.frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+	AutoBar.frame:RegisterEvent("ZONE_CHANGED_INDOORS")
+
 	AutoBar.frame:RegisterEvent("QUEST_ACCEPTED")
 
 
@@ -291,7 +295,7 @@ end
 
 
 -- Given an item link, this adds the item to the given category
--- NOTE: No effort is made to avoid adding an item that as already been added. As long as the list is small, this isn't worth worrying about.
+-- Returns true if the item was newly added, false if already present or not added
 local function add_item_to_dynamic_category(p_item_link, p_category_name)
 	local debug_me = false
 	local category = AutoBarCategoryList[p_category_name]
@@ -299,13 +303,17 @@ local function add_item_to_dynamic_category(p_item_link, p_category_name)
 	if (category) then
 		if(debug_me) then code.log_warning("Adding", p_item_link, " to ", p_category_name, code.Dump(category.items, 1)); end;
 		local item_name, item_id = AB.ItemLinkDecode(p_item_link)
-		for _, existing_id in ipairs(category.items) do
-			if (existing_id == item_id) then return end
+		if (item_id) then
+			for _, existing_id in ipairs(category.items) do
+				if (existing_id == item_id) then return false end
+			end
+			category.items[#category.items + 1] = item_id
+			if(debug_me) then code.log_warning(item_name, item_id, "Num Items:", #category.items); end;
+			return true
 		end
-		category.items[#category.items + 1] = item_id
-		if(debug_me) then code.log_warning(item_name, item_id, "Num Items:", #category.items); end;
 	end
 
+	return false
 end
 
 
@@ -327,8 +335,9 @@ function AB.events.QUEST_ACCEPTED(p_arg1, p_arg2)
 		local link = GetQuestLogSpecialItemInfo(quest_idx)
 		--code.log_warning("   ", link)
 		if(link) then
-			add_item_to_dynamic_category(link, "Dynamic.Quest")
-			AB.ABScheduleUpdate(tick.UpdateItemsID)
+			if add_item_to_dynamic_category(link, "Dynamic.Quest") then
+				AB.ABScheduleUpdate(tick.UpdateItemsID)
+			end
 		end
 	end
 
@@ -350,8 +359,9 @@ if (ABGData.is_mainline_wow) then
 				local link = GetQuestLogSpecialItemInfo(i)
 				if(link) then
 					--code.log_warning("   ", link)
-					add_item_to_dynamic_category(link, "Dynamic.Quest")
-					needs_item_update = true
+					if add_item_to_dynamic_category(link, "Dynamic.Quest") then
+						needs_item_update = true
+					end
 				end
 			end
 
@@ -436,6 +446,14 @@ function AB.events.PLAYER_ENTERING_WORLD()
 
 
 	AB.UpdateAllLinear()
+
+	-- Zone spells might need map ID which can resolve shortly after entering world
+	C_Timer.After(0.5, function()
+		if not InCombatLockdown() then
+			AutoBarSearch.dirty.spells = true
+			AB.ABScheduleUpdate(tick.UpdateSpellsID)
+		end
+	end)
 
 end
 
@@ -567,7 +585,7 @@ end
 function AB.events.UNIT_SPELLCAST_SUCCEEDED(p_unit, p_guid, p_spell_id)
 	AB.LogEventStart("UNIT_SPELLCAST_SUCCEEDED")
 	assert(p_unit == "player")
-	AB.ABScheduleUpdate(tick.UpdateSpellsID)
+	AB.ABScheduleUpdate(tick.UpdateButtonsID)
 	AB.LogEventEnd("UNIT_SPELLCAST_SUCCEEDED", p_unit, p_guid, p_spell_id)
 end
 
@@ -580,6 +598,38 @@ function AB.events.SPELLS_CHANGED(p_arg1)
 	end
 
 	AB.LogEventEnd("SPELLS_CHANGED", p_arg1)
+end
+
+
+local last_zone_map_id = nil
+local last_zone_text = nil
+
+function AB.events.ZONE_CHANGED()
+	AB.LogEventStart("ZONE_CHANGED")
+	local current_map = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
+	local current_zone = GetZoneText and GetZoneText()
+	if (current_map ~= last_zone_map_id or current_zone ~= last_zone_text) then
+		last_zone_map_id = current_map
+		last_zone_text = current_zone
+		AutoBarSearch.dirty.spells = true
+		AB.ABScheduleUpdate(tick.UpdateSpellsID)
+
+		-- In case map ID takes a fraction of a second to resolve after zone transition
+		C_Timer.After(0.5, function()
+			if not InCombatLockdown() then
+				AutoBarSearch.dirty.spells = true
+				AB.ABScheduleUpdate(tick.UpdateSpellsID)
+			end
+		end)
+	end
+	AB.LogEventEnd("ZONE_CHANGED")
+end
+
+AB.events.ZONE_CHANGED_NEW_AREA = AB.events.ZONE_CHANGED
+
+function AB.events.ZONE_CHANGED_INDOORS()
+	-- Indoor/outdoor transition affects button usability (e.g. mounts), not spellbook or zone restrictions
+	AB.events.ACTIONBAR_UPDATE_USABLE()
 end
 
 
@@ -870,6 +920,7 @@ function AutoBar:MoveButtonsModeOn()
 	AB.LibKeyBound:Deactivate()
 	AutoBar.moveButtonsMode = true
 	for _, bar in pairs(self.barList) do
+		bar.layoutDirty = true
 		if (bar.sharedLayoutDB.enabled) then
 			bar:MoveButtonsModeOn()
 		end
@@ -880,6 +931,7 @@ end
 function AutoBar:MoveButtonsModeOff()
 	AutoBar.moveButtonsMode = nil
 	for _, bar in pairs(self.barList) do
+		bar.layoutDirty = true
 		if bar.sharedLayoutDB.enabled then
 			bar:MoveButtonsModeOff()
 		end
@@ -1082,6 +1134,11 @@ end
 
 function AB.UpdateAllLinear()
 
+	for _bar_key, bar in pairs(AutoBar.barList) do
+		bar.layoutDirty = true
+		bar.positionLoaded = nil
+	end
+
 	AB.UpdateCategories()
 	AB.UpdateSpells()
 	AB.UpdateObjects()
@@ -1191,8 +1248,11 @@ end
 function AB.UpdateActive()
 	AB.LogEventStart("AB.UpdateActive")
 	for _bar_key, bar in pairs(AutoBar.barList) do
-		bar:UpdateActive()
-		bar:RefreshLayout()
+		local changed = bar:UpdateActive()
+		if (changed or bar.layoutDirty) then
+			bar:RefreshLayout()
+			bar.layoutDirty = false
+		end
 	end
 
 	AB.LogEventEnd("AB.UpdateActive")

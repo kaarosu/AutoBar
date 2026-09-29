@@ -203,6 +203,8 @@ if (GetLocale() == "enUS") then
 		["AutoBarButtonCooldownStoneMana"] = "Stone Cooldown: Mana",
 		["AutoBarButtonCooldownStoneRejuvenation"] = "Stone Cooldown: Rejuvenation",
 		["AutoBarButtonCrafting"] = "Crafting",
+		["AutoBarButtonCooking"] = "Cooking",
+		["AutoBarButtonFirstAid"] = "First Aid",
 		["AutoBarButtonDebuff"] = "Debuff",
 		["AutoBarButtonElixirBattle"] = "Battle Elixir",
 		["AutoBarButtonElixirGuardian"] = "Guardian Elixir",
@@ -221,6 +223,7 @@ if (GetLocale() == "enUS") then
 		["AutoBarButtonMount"] = "Mount",
 		["AutoBarButtonPets"] = "Pets",
 		["AutoBarButtonQuest"] = "Quest",
+		["AutoBarButtonHousing"] = "Housing Items",
 		["AutoBarButtonMiscFun"] = "Misc, Fun",
 		["AutoBarButtonGuildSpell"] = "Guild & Warbands",
 		["AutoBarButtonRacial"] = "Racials",
@@ -424,6 +427,8 @@ if (GetLocale() == "enUS") then
 		["Spell.Class.Pets2"] = "Pet Combat";
 		["Spell.Class.Pets3"] = "Pet Misc";
 		["Spell.Crafting"] = "Crafting";
+		["Spell.First Aid"] = "First Aid";
+		["Spell.Cooking"] = "Cooking";
 		["Spell.Critter"] = "Pet Spells";
 		["Spell.Debuff.Multiple"] = "Debuff: Multiple";
 		["Spell.Debuff.Single"] = "Debuff: Single";

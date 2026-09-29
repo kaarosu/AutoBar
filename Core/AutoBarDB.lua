@@ -97,7 +97,7 @@ local BASIC_BUTTON_DATA = {
 	{button_name = "AutoBarButtonDrums", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonFood", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE, additional_args = {
 		disableConjure = false,
-		include_combo_basic = true,
+		include_combo_basic = false,
 	} },
 	{button_name = "AutoBarButtonFoodBuff", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonFoodCombo", barKey = "AutoBarClassBarBasic"},
@@ -109,11 +109,13 @@ local BASIC_BUTTON_DATA = {
 	{button_name = "AutoBarButtonElixirGuardian", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE},
 	{button_name = "AutoBarButtonElixirBoth", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE},
 	{button_name = "AutoBarButtonCrafting", barKey = "AutoBarClassBarBasic"},
+	{button_name = "AutoBarButtonCooking", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonQuest", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonTrinket1", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonTrinket2", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonRacial", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonGuildSpell", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_CLASSIC, additional_args = {arrangeOnUse = true} },
+	{button_name = "AutoBarButtonHousing", barKey = "AutoBarClassBarBasic", project_id = WOW_PROJECT_MAINLINE, additional_args = {arrangeOnUse = true} },
 }
 
 
@@ -318,6 +320,33 @@ local function verify_db()
 				buttonDB[categoryIndex] = changedCategoryKey
 			end
 		end
+	end
+
+	-- Migrate AutoBarButtonHousing from Extras to Basic bar if it was placed on Extras
+	local function migrate_housing(buttonList, barList)
+		if (buttonList and buttonList["AutoBarButtonHousing"]) then
+			local btn = buttonList["AutoBarButtonHousing"]
+			if (btn.barKey == "AutoBarClassBarExtras") then
+				btn.barKey = "AutoBarClassBarBasic"
+				btn.defaultButtonIndex = "*"
+			end
+		end
+		if (barList and barList["AutoBarClassBarExtras"] and barList["AutoBarClassBarExtras"].buttonKeys) then
+			local bkeys = barList["AutoBarClassBarExtras"].buttonKeys
+			for i = #bkeys, 1, -1 do
+				if (bkeys[i] == "AutoBarButtonHousing") then
+					table.remove(bkeys, i)
+				end
+			end
+		end
+	end
+
+	migrate_housing(AutoBarDB2.account.buttonList, AutoBarDB2.account.barList)
+	for _class_name, class_data in pairs(AutoBarDB2.classes or {}) do
+		migrate_housing(class_data.buttonList, class_data.barList)
+	end
+	for _char_name, char_data in pairs(AutoBarDB2.chars or {}) do
+		migrate_housing(char_data.buttonList, char_data.barList)
 	end
 end
 
@@ -540,7 +569,7 @@ local function get_bar_default_settings()
 	{
 		enabled = true,
 		rows = 1,
-		columns = 16,
+		columns = (ABGData.is_forever_wow or ABGData.is_vanilla_wow or not ABGData.is_mainline_wow) and 24 or 16,
 		alignButtons = "3",
 		alpha = 1,
 		docking = nil,
@@ -610,6 +639,11 @@ function AutoBar:InitializeDefaults()
 
 	if (not AutoBarDB2.account.barList["AutoBarClassBarBasic"]) then
 		AutoBarDB2.account.barList["AutoBarClassBarBasic"] = get_bar_default_settings();
+		AutoBarDB2.account.barList["AutoBarClassBarBasic"].columns = 24;
+	elseif (ABGData.is_forever_wow or ABGData.is_vanilla_wow or not ABGData.is_mainline_wow) then
+		if ((AutoBarDB2.account.barList["AutoBarClassBarBasic"].columns or 16) < 24) then
+			AutoBarDB2.account.barList["AutoBarClassBarBasic"].columns = 24;
+		end
 	end
 	if (not AutoBarDB2.account.barList["AutoBarClassBarExtras"]) then
 		AutoBarDB2.account.barList["AutoBarClassBarExtras"] = get_bar_default_settings();
@@ -845,7 +879,7 @@ function AutoBar:InitializeDefaults()
 			AutoBarDB2.account.buttonList["AutoBarButtonHousing"] = {
 				buttonKey = "AutoBarButtonHousing",
 				buttonClass = "AutoBarButtonHousing",
-				barKey = "AutoBarClassBarExtras",
+				barKey = "AutoBarClassBarBasic",
 				defaultButtonIndex = "*",
 				enabled = true,
 				arrangeOnUse = true,
@@ -977,7 +1011,7 @@ function AutoBar:InitializeDefaults()
 	--classic-only: "AutoBarButtonTrack",
 	local deprecated_buttons
 
-	if (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC) then
+	if (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or ABGData.is_forever_wow) then
 		deprecated_buttons =
 		{
 			"AutoBarButtonWarlockStones", "AutoBarButtonSting", "AutoBarButtonAura",
@@ -988,6 +1022,8 @@ function AutoBar:InitializeDefaults()
 			"AutoBarButtonCooldownPotionHealth", "AutoBarButtonMillHerbs", "AutoBarButtonCooldownStoneMana",
 			"AutoBarButtonMana", "AutoBarButtonCooldownPotionMana",
 			"AutoBarButtonCooldownDrums",
+			"AutoBarButtonTotem",
+			"AutoBarButtonFirstAid",
 		}
 	elseif (ABGData.is_mainline_wow) then
 
@@ -1001,10 +1037,14 @@ function AutoBar:InitializeDefaults()
 			"AutoBarButtonCooldownStoneMana", "AutoBarButtonAquatic",
 			"AutoBarButtonMana", "AutoBarButtonCooldownPotionMana",
 			"AutoBarButtonCooldownDrums", "AutoBarButtonToyBox",
+			"AutoBarButtonFirstAid",
+			"AutoBarButtonTotemAir", "AutoBarButtonTotemEarth",
+			"AutoBarButtonTotemFire", "AutoBarButtonTotemWater",
 		}
 	else
 		deprecated_buttons = {
 			"AutoBarButtonCooldownDrums",
+			"AutoBarButtonFirstAid",
 		}
 	end
 
@@ -1021,7 +1061,11 @@ function AutoBar:InitializeDefaults()
 
 	end
 
-	if (ABGData.is_mainline_wow) then
+	if (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or ABGData.is_forever_wow) then
+		if (AutoBar.CLASS == "SHAMAN") then
+			AutoBar.class.buttonList["AutoBarButtonTotem"] = nil
+		end
+	elseif (ABGData.is_mainline_wow) then
 
 		if(AutoBar.CLASS == "ROGUE" and AutoBar.class.buttonList["AutoBarButtonTrap"]) then
 			AutoBar.class.buttonList["AutoBarButtonTrap"] = nil
@@ -1043,12 +1087,10 @@ function AutoBar:InitializeDefaults()
 		end
 		if(AutoBar.CLASS == "SHAMAN" ) then
 			-- Migrate Retail Shamans to unified AutoBarButtonTotem by unplacing legacy separate totem buttons
-			if (not AutoBar.class.buttonList["AutoBarButtonTotem"]) then
-				AutoBar.class.buttonList["AutoBarButtonTotemAir"] = nil
-				AutoBar.class.buttonList["AutoBarButtonTotemEarth"] = nil
-				AutoBar.class.buttonList["AutoBarButtonTotemFire"] = nil
-				AutoBar.class.buttonList["AutoBarButtonTotemWater"] = nil
-			end
+			AutoBar.class.buttonList["AutoBarButtonTotemAir"] = nil
+			AutoBar.class.buttonList["AutoBarButtonTotemEarth"] = nil
+			AutoBar.class.buttonList["AutoBarButtonTotemFire"] = nil
+			AutoBar.class.buttonList["AutoBarButtonTotemWater"] = nil
 		end
 	end
 
@@ -1142,61 +1184,54 @@ function AutoBar:RefreshBarDBLists()
 end
 
 function AutoBar:ButtonExists(barDB, targetButtonDB)
+	if (not barDB or not barDB.buttonKeys) then return false end
+	local targetKey = type(targetButtonDB) == "table" and targetButtonDB.buttonKey or targetButtonDB
 	for _button_key_index, buttonKey in ipairs(barDB.buttonKeys) do
-		if (buttonKey == targetButtonDB.buttonKey) then
+		if (buttonKey == targetKey) then
 			return true
 		end
 	end
 	return false
 end
 
-local foundButtons = {}
 -- Changing sharing may expose duplicate buttons. Also dragging from lower shared levels to higher shared levels may result in duplicates cross character.
 -- Use the Button's barKey to resolve issues.
 function AutoBar:RemoveDuplicateButtons()
 	local barButtonsDBList = AutoBar.barButtonsDBList
 	local buttonDBList = AutoBar.buttonDBList
 
-	for buttonKey in pairs(foundButtons) do
-		foundButtons[buttonKey] = nil
-	end
-
 	for barKey, barDB in pairs(barButtonsDBList) do
-		local delete
 		local buttonKeys = barDB.buttonKeys
-		local nKeys = 0
+		local delete = false
 
-		-- Remove Bar Duplicates
-		for buttonKeyIndex, buttonKey in pairs(buttonKeys) do
-			local foundBarKey = foundButtons[buttonKey]
-			if (foundBarKey and foundBarKey == barKey) then
+		-- 1. Remove Bar Duplicates (same button appearing multiple times on this bar)
+		local seenOnBar = {}
+		for buttonKeyIndex, buttonKey in ipairs(buttonKeys) do
+			if (seenOnBar[buttonKey]) then
 				buttonKeys[buttonKeyIndex] = false
 				delete = true
 			else
-				foundButtons[buttonKey] = barKey
-			end
-			if (buttonKeyIndex > nKeys) then
-				nKeys = buttonKeyIndex
-			end
-		end
-		if (delete) then
-			local buttonKeyList = buttonKeys
-			for index = nKeys, 1, -1 do
-				if (buttonKeyList[index] == false) then
-					local numKeys = # buttonKeyList
-					buttonKeyList[index] = nil
-					for buttonIndex = index, numKeys - 1, 1 do
-						buttonKeyList[buttonIndex] = buttonKeyList[buttonIndex + 1]
-					end
-				end
+				seenOnBar[buttonKey] = true
 			end
 		end
 
-		-- Adjust Bar Location
-		delete = false
+		if (delete) then
+			for index = #buttonKeys, 1, -1 do
+				if (buttonKeys[index] == false) then
+					table.remove(buttonKeys, index)
+				end
+			end
+			delete = false
+		end
+
+		-- 2. Adjust Bar Location & Remove Deprecated / Nonexistent / Cross-bar Duplicates
 		for buttonKeyIndex, buttonKey in ipairs(buttonKeys) do
 			local buttonDB = buttonDBList[buttonKey]
-			if (buttonDB) then
+			if (not buttonDB or (not AutoBar.Class[buttonDB.buttonClass])) then
+				-- Button is deprecated, removed, or invalid for this game client
+				buttonKeys[buttonKeyIndex] = false
+				delete = true
+			else
 				if (not buttonDB.barKey) then
 					-- Not officially placed, so place
 					buttonDB.barKey = barKey
@@ -1204,29 +1239,20 @@ function AutoBar:RemoveDuplicateButtons()
 				if (buttonDB.barKey ~= barKey) then
 					local currentBarDB = barButtonsDBList[buttonDB.barKey]
 					if (not currentBarDB) then
-						-- Placed on a currently unaccesible Bar.  Adjust official location.
-						-- ToDo: This implies placement on class or character only bar.  Should change sharing when doing that for the Button.
+						-- Placed on a currently inaccessible Bar. Adjust official location.
 						buttonDB.barKey = barKey
-					elseif (AutoBar:ButtonExists(currentBarDB, buttonDB)) then
-						-- Exists in official location.  Remove duplicate.
+					else
+						-- Does not belong on this bar. Remove so official bar owns it.
 						buttonKeys[buttonKeyIndex] = false
 						delete = true
-					else
-						-- Not in official location.  Adjust official location.
-						buttonDB.barKey = barKey
 					end
 				end
 			end
 		end
 		if (delete) then
-			local buttonKeyList = buttonKeys
-			for index = nKeys, 1, -1 do
-				if (buttonKeyList[index] == false) then
-					local numKeys = # buttonKeyList
-					buttonKeyList[index] = nil
-					for buttonIndex = index, numKeys - 1, 1 do
-						buttonKeyList[buttonIndex] = buttonKeyList[buttonIndex + 1]
-					end
+			for index = #buttonKeys, 1, -1 do
+				if (buttonKeys[index] == false) then
+					table.remove(buttonKeys, index)
 				end
 			end
 		end
@@ -1248,48 +1274,25 @@ end
 -- /script AutoBar:BarsCompact()
 function AutoBar:BarsCompact()
 	for _bar_key, barDB in pairs(AutoBar.barButtonsDBList) do
---print("AutoBar:BarsCompact barKey " .. tostring(barKey) .. " AutoBar.barLayoutDBList[barKey].buttonKeys " .. tostring(AutoBar.barLayoutDBList[barKey].buttonKeys))
 		local buttonKeys = barDB.buttonKeys
-		local badIndexMax = nil
-		local nKeys = 0
-		for buttonKeyIndex, _button_key in pairs(buttonKeys) do
-			if (buttonKeyIndex > 1 and buttonKeys[buttonKeyIndex - 1] == nil) then
-				badIndexMax = buttonKeyIndex
-			end
-			if (buttonKeyIndex > nKeys) then
-				nKeys = buttonKeyIndex
-			end
-		end
-		if (badIndexMax) then
---print("AutoBar:BarsCompact badIndexMax " .. tostring(badIndexMax))
-			local source = 0
-			local sink = 1
-			local sinkButtonKey, sourceButtonKey
-			while true do
-				sinkButtonKey = buttonKeys[sink]
-				if (sinkButtonKey) then
-					sink = sink + 1
-				else
-					if (source < sink) then
-						source = sink + 1
-					end
-					while source <= nKeys do
-						sourceButtonKey = buttonKeys[source]
-						if (sourceButtonKey) then
-							-- Move it
-							buttonKeys[sink] = sourceButtonKey
-							buttonKeys[source] = nil
-							sink = sink + 1
-							source = source + 1
-							break
-						else
-							source = source + 1
-						end
-					end
+		if (buttonKeys) then
+			local newKeys = {}
+			local maxIndex = 0
+			for k in pairs(buttonKeys) do
+				if (type(k) == "number" and k > maxIndex) then
+					maxIndex = k
 				end
-				if (source > nKeys or sink > nKeys) then
-					break
+			end
+			for i = 1, maxIndex do
+				if (buttonKeys[i]) then
+					newKeys[#newKeys + 1] = buttonKeys[i]
 				end
+			end
+			for k in pairs(buttonKeys) do
+				buttonKeys[k] = nil
+			end
+			for i = 1, #newKeys do
+				buttonKeys[i] = newKeys[i]
 			end
 		end
 	end
@@ -1327,7 +1330,7 @@ function AutoBar:PopulateBars()
 		else
 			barDB = nil
 		end
-		if (barDB and not AutoBar:ButtonExists(barDB, buttonDB)) then
+		if (barDB and AutoBar.Class[buttonDB.buttonClass] and not AutoBar:ButtonExists(barDB, buttonDB)) then
 			buttonIndex = nil
 			if (type(buttonDB.defaultButtonIndex) == "number") then
 				buttonIndex = tonumber(buttonDB.defaultButtonIndex)
@@ -1361,8 +1364,10 @@ function AutoBar:PopulateBars()
 
 	for _index, buttonDB in ipairs(appendList) do
 		barDB = barButtonsDBList[buttonDB.barKey]
-		local nButtons = # barDB.buttonKeys + 1
-		barDB.buttonKeys[nButtons] = buttonDB.buttonKey
+		if (barDB and not AutoBar:ButtonExists(barDB, buttonDB)) then
+			local nButtons = # barDB.buttonKeys + 1
+			barDB.buttonKeys[nButtons] = buttonDB.buttonKey
+		end
 	end
 end
 

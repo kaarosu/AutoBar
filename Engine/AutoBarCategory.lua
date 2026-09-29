@@ -337,10 +337,21 @@ local MacroTextCategory = AB.MacroTextCategory	---@class MacroTextCategory
 ---@return MacroTextCategory
 function MacroTextCategory:new(p_description, p_short_texture)
 	assert(type(p_description) == "string")
-	assert(type(p_short_texture) == "string")
 
 	local obj = CreateFromMixins(self)
-	obj:init(p_description, "Interface\\Icons\\" .. p_short_texture)
+	local texture
+	if (type(p_short_texture) == "number") then
+		texture = p_short_texture
+	elseif (type(p_short_texture) == "string") then
+		if (p_short_texture:find("^[I|i]nterface") or p_short_texture:find("\\") or p_short_texture:find("/") or (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo(p_short_texture)) or p_short_texture:find("^Ping_")) then
+			texture = p_short_texture
+		else
+			texture = "Interface\\Icons\\" .. p_short_texture
+		end
+	else
+		texture = 137008
+	end
+	obj:init(p_description, texture)
 
 	return obj
 end
@@ -383,8 +394,10 @@ local SpellsCategory = AB.SpellsCategory ---@class SpellsCategory
 ---@param p_cast_list table|nil
 ---@param rightClickList table|nil
 ---@param p_pt_set string|nil  PeriodicTable set of spell IDs (mutually exclusive with p_cast_list/rightClickList)
+---@param p_zone_map_ids table|number|nil  Map ID(s) where these spells are active
+---@param p_zone_names table|string|nil  Zone names where these spells are active
 ---@return SpellsCategory
-function SpellsCategory:new(p_description, p_texture, p_cast_list, rightClickList, p_pt_set)
+function SpellsCategory:new(p_description, p_texture, p_cast_list, rightClickList, p_pt_set, p_zone_map_ids, p_zone_names)
 
 	if(type(p_cast_list) ~= "table" and p_cast_list ~= nil) then
 		code.log_warning("Category:", p_description, " is passing a bad cast_list:", p_cast_list)
@@ -422,9 +435,27 @@ function SpellsCategory:new(p_description, p_texture, p_cast_list, rightClickLis
 
 	obj.castList = obj.castList or {}
 
+	if (p_zone_map_ids or p_zone_names) then
+		obj:SetZoneRestriction(p_zone_map_ids, p_zone_names)
+	end
+
 	obj:Refresh()
 
 	return obj
+end
+
+-- Restrict all spells in this category to specific zones / maps
+function SpellsCategory:SetZoneRestriction(p_map_ids, p_zone_names)
+	self.zone_map_ids = p_map_ids
+	self.zone_names = p_zone_names
+
+	if (self.castList) then
+		for _, spell_name in ipairs(self.castList) do
+			if (spell_name and type(spell_name) == "string") then
+				AutoBarSearch:RegisterSpellZoneRestriction(spell_name, p_map_ids, p_zone_names)
+			end
+		end
+	end
 end
 
 -- Reset the item list based on changed settings.
@@ -598,10 +629,11 @@ function AB.InitializeAllCategories()
 	AB.InitializeCategories()
 
 
-	AutoBarCategoryList["Macro.Raid Target"] = MacroTextCategory:new( "Raid Target", "Spell_BrokenHeart")
+	AutoBarCategoryList["Macro.Raid Target"] = MacroTextCategory:new("Macro.Raid Target", 137008)
 	for index = 1, 8 do
-		AutoBarCategoryList["Macro.Raid Target"]:AddMacroText('/tm ' .. index,  "Interface/targetingframe/UI-RaidTargetingIcon_" .. index, L["Raid " .. index])
+		AutoBarCategoryList["Macro.Raid Target"]:AddMacroText('/wm [mod:ctrl] ' .. index .. '\n/tm [nomod:ctrl] ' .. index, 137000 + index, L["Raid " .. index])
 	end
+	AutoBarCategoryList["Macro.Raid Target"]:AddMacroText('/cwm [mod:ctrl] all\n/tm [nomod:ctrl] 0', 132212, L["Clear Raid Target / Markers"])
 
 	AutoBarCategoryList["Battle Pet.Favourites"] = MacroTextCategory:new( "Battle Pet.Favourites", "inv_misc_pheonixpet_01")
 
@@ -690,6 +722,11 @@ function AB.InitializeAllCategories()
 
 	AutoBarCategoryList["Muffin.Food.Combo.Buff"] = ItemsCategory:new("Muffin.Food.Combo.Buff", "INV_Misc_Food_95_Grainbread", "Muffin.Food.Combo.Buff")
 	AutoBarCategoryList["Muffin.Food.Combo.Buff"]:SetNonCombat(true)
+
+	AutoBarCategoryList["Muffin.Food.Buff"] = ItemsCategory:new("Muffin.Food.Buff", "INV_Misc_Food_95_Grainbread", "Muffin.Food.Buff")
+	AutoBarCategoryList["Muffin.Food.Buff"]:SetNonCombat(true)
+
+	AutoBarCategoryList["Muffin.Bandages.Basic"] = ItemsCategory:new("Muffin.Bandages.Basic", "INV_Misc_Bandage_Netherweave_Heavy", "Muffin.Bandages.Basic")
 
 	AutoBarCategoryList["Muffin.Stones.Mana"] = ItemsCategory:new("Muffin.Stones.Mana", "INV_Misc_Food_95_Grainbread", "Muffin.Stones.Mana")
 	AutoBarCategoryList["Muffin.Stones.Health"] = ItemsCategory:new("Muffin.Stones.Health", "INV_Misc_Food_95_Grainbread", "Muffin.Stones.Health")

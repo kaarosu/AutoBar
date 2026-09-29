@@ -307,7 +307,7 @@ end
 
 -- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
 local function UpdateIcon(button, texture)
-	button.icon:SetTexture(texture)
+	AB.SetTextureOrAtlas(button.icon, texture)
 end
 
 -- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
@@ -976,7 +976,7 @@ function AutoBarButton:SetupAttributes(button, bag, slot, spell, macroId, p_type
 			frame:SetAttribute("type", "macro")
 			frame:SetAttribute("macrotext", p_info_data.macro_text)
 			frame:SetAttribute("AutoBarGUID", p_info_data.guid)
-			frame:SetAttribute("itemLink", p_info_data.macro_tooltip)
+			frame:SetAttribute("itemLink", p_info_data.tooltip or p_info_data.macro_tooltip)
 			button.macroActive = true
 		elseif (p_type_id == ABGData.TYPE_BATTLE_PET) then
 			frame:SetAttribute("type", "macro")
@@ -1275,24 +1275,46 @@ function AutoBarButtonPoisonNonlethal:init(parentBar, buttonDB)
 
 end
 
+local function find_known_spell(p_list)
+	for _i, id in ipairs(p_list) do
+		if C_SpellBook and C_SpellBook.IsSpellInSpellBook and C_SpellBook.IsSpellInSpellBook(id) then
+			return id
+		elseif IsSpellKnown and IsSpellKnown(id) then
+			return id
+		elseif IsPlayerSpell and IsPlayerSpell(id) then
+			return id
+		end
+	end
+end
+
 local AutoBarButtonBandages = Class(AutoBarButton)
 AutoBar.Class["AutoBarButtonBandages"] = AutoBarButtonBandages
 
 function AutoBarButtonBandages:init(parentBar, buttonDB)
 	AutoBarButtonBandages.super.init(self, parentBar, buttonDB)
 
+	self:AddCategory("Spell.First Aid")
 	self:AddCategory("Consumable.Bandage.Basic")
 	self:AddCategory("Consumable.Bandage.Battleground.Alterac Valley")
 	self:AddCategory("Consumable.Bandage.Battleground.Arathi Basin")
 	self:AddCategory("Consumable.Bandage.Battleground.Warsong Gulch")
-
-	if (AutoBarGlobalDataObject.is_mainline_wow) then
-		self:AddCategory("Muffin.Bandages.Basic")
-	end
-
-
-
+	self:AddCategory("Muffin.Bandages.Basic")
 end
+
+if (ABGData.is_mainline_wow or ABGData.is_forever_wow) then
+	local bandages_spell_id
+	function AutoBarButtonBandages:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+		if (spell == ABGData.spell_name_list["First Aid"] or spell == "First Aid") then
+			bandages_spell_id = bandages_spell_id or find_known_spell({3273, 3274, 7924, 10846, 27028, 45542, 53276, 74559, 110406, 158741, 195114})
+			spell = bandages_spell_id or spell
+		end
+		AutoBarButtonBandages.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+	end
+end
+
+-- AutoBarButtonFirstAid is deprecated in favor of AutoBarButtonBandages
+local AutoBarButtonFirstAid = Class(AutoBarButtonBandages)
+AutoBar.Class["AutoBarButtonFirstAid"] = AutoBarButtonFirstAid
 
 
 local AutoBarButtonBattleStandards = Class(AutoBarButton)
@@ -1461,15 +1483,8 @@ function AutoBarButtonCrafting:init(parentBar, buttonDB)
 	self:AddCategory("Spell.Crafting")
 end
 
-if (ABGData.is_mainline_wow) then
-	local function find_known_spell(p_list)
-		for _i, id in ipairs(p_list) do
-			if C_SpellBook.IsSpellInSpellBook(id) then
-				return id
-			end
-		end
-	end
-
+if (ABGData.is_mainline_wow or ABGData.is_forever_wow) then
+	local first_aid_spell_id
 	local cooking_spell_id
 	local jc_spell_id
 	local alchemy_spell_id
@@ -1486,7 +1501,10 @@ if (ABGData.is_mainline_wow) then
 
 		if (debug) then print("Spell:", spell, "ItemId:", itemId, ABGData.spell_name_list[spell], ABGData.spell_name_list["Cooking"]); end
 
-			if(spell == ABGData.spell_name_list["Jewelcrafting"]) then
+			if (spell == ABGData.spell_name_list["First Aid"] or spell == "First Aid") then
+				first_aid_spell_id = first_aid_spell_id or find_known_spell({3273, 3274, 7924, 10846, 27028, 45542, 53276, 74559, 110406, 158741, 195114})
+				spell = first_aid_spell_id or spell
+			elseif(spell == ABGData.spell_name_list["Jewelcrafting"]) then
 				jc_spell_id = jc_spell_id or find_known_spell({25229, 158750, 195116, 25230, 28894, 28895, 28897, 51311, 73318, 110420, 264532})
 				spell = jc_spell_id
 			elseif (spell == ABGData.spell_name_list["Alchemy"]) then
@@ -1519,6 +1537,26 @@ if (ABGData.is_mainline_wow) then
 
 		AutoBarButtonCrafting.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
 
+	end
+end
+
+local AutoBarButtonCooking = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonCooking"] = AutoBarButtonCooking
+
+function AutoBarButtonCooking:init(parentBar, buttonDB)
+	AutoBarButtonCooking.super.init(self, parentBar, buttonDB)
+
+	self:AddCategory("Spell.Cooking")
+end
+
+if (ABGData.is_mainline_wow or ABGData.is_forever_wow) then
+	local cooking_btn_spell_id
+	function AutoBarButtonCooking:SetupAttributes(button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
+		if (spell == ABGData.spell_name_list["Cooking"] or spell == "Cooking") then
+			cooking_btn_spell_id = cooking_btn_spell_id or find_known_spell({2550, 158765, 3102, 3413, 18260, 33359, 51296, 88053, 104381, 195128})
+			spell = cooking_btn_spell_id or spell
+		end
+		AutoBarButtonCooking.super.SetupAttributes(self, button, bag, slot, spell, macroId, p_type_id, p_info_data, itemId, itemData)
 	end
 end
 
@@ -1754,9 +1792,11 @@ function AutoBarButtonFood:init(parentBar, buttonDB)
 
 	if (buttonDB.include_combo_basic) then
 		self:AddCategory("Muffin.Food.Combo.Basic")
+		self:AddCategory("Consumable.Food.Edible.Combo.Non-Conjured")
 	end
 
 	self:AddCategory("Consumable.Food.Percent.Basic")
+	self:AddCategory("Consumable.Food.Edible.Basic.Non-Conjured")
 end
 
 --local function SetDisableConjure(info, value)
@@ -1795,62 +1835,13 @@ AutoBar.Class["AutoBarButtonFoodBuff"] = AutoBarButtonFoodBuff
 function AutoBarButtonFoodBuff:init(parentBar, buttonDB)
 	AutoBarButtonFoodBuff.super.init(self, parentBar, buttonDB)
 
---	self:AddCategory("Consumable.Food.Buff.Stamina")
---	self:AddCategory("Consumable.Food.Buff.HP Regen")
---	self:AddCategory("Consumable.Food.Percent.Bonus")
-
 	self:AddCategory("Muffin.Food.Health.Buff")
-
---	if (AutoBar.CLASS == "DEATHKNIGHT" or AutoBar.CLASS == "WARRIOR") then
---		self:AddCategory("Consumable.Food.Buff.Strength")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---		self:AddCategory("Consumable.Food.Buff.Dodge")
---	elseif (AutoBar.CLASS == "DRUID") then
---		self:AddCategory("Consumable.Food.Buff.Agility")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---		self:AddCategory("Consumable.Food.Buff.Dodge")
---		self:AddCategory("Consumable.Food.Buff.Healing")
---		self:AddCategory("Consumable.Food.Buff.Intellect")
---		self:AddCategory("Consumable.Food.Buff.Mana Regen")
---		self:AddCategory("Consumable.Food.Buff.Spell Damage")
---		self:AddCategory("Consumable.Food.Buff.Spirit")
---	elseif (AutoBar.CLASS == "HUNTER" or AutoBar.CLASS == "ROGUE") then
---		self:AddCategory("Consumable.Food.Buff.Agility")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---	elseif (AutoBar.CLASS == "MAGE"or AutoBar.CLASS == "WARLOCK") then
---		self:AddCategory("Consumable.Food.Buff.Intellect")
---		self:AddCategory("Consumable.Food.Buff.Mana Regen")
---		self:AddCategory("Consumable.Food.Buff.Spell Damage")
---		self:AddCategory("Consumable.Food.Buff.Spirit")
---	elseif (AutoBar.CLASS == "PALADIN") then
---		self:AddCategory("Consumable.Food.Buff.Strength")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---		self:AddCategory("Consumable.Food.Buff.Dodge")
---		self:AddCategory("Consumable.Food.Buff.Healing")
---		self:AddCategory("Consumable.Food.Buff.Intellect")
---		self:AddCategory("Consumable.Food.Buff.Mana Regen")
---		self:AddCategory("Consumable.Food.Buff.Spell Damage")
---		self:AddCategory("Consumable.Food.Buff.Spirit")
---	elseif (AutoBar.CLASS == "PRIEST") then
---		self:AddCategory("Consumable.Food.Buff.Intellect")
---		self:AddCategory("Consumable.Food.Buff.Mana Regen")
---		self:AddCategory("Consumable.Food.Buff.Spell Damage")
---		self:AddCategory("Consumable.Food.Buff.Spirit")
---		self:AddCategory("Consumable.Food.Buff.Healing")
---	elseif (AutoBar.CLASS == "ROGUE") then
---		self:AddCategory("Consumable.Food.Buff.Agility")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---	elseif (AutoBar.CLASS == "SHAMAN") then
---		self:AddCategory("Consumable.Food.Buff.Agility")
---		self:AddCategory("Consumable.Food.Buff.Attack Power")
---		self:AddCategory("Consumable.Food.Buff.Healing")
---		self:AddCategory("Consumable.Food.Buff.Intellect")
---		self:AddCategory("Consumable.Food.Buff.Mana Regen")
---		self:AddCategory("Consumable.Food.Buff.Spell Damage")
---		self:AddCategory("Consumable.Food.Buff.Spirit")
---	end
---
---	self:AddCategory("Consumable.Food.Buff.Other")
+	self:AddCategory("Muffin.Food.Combo.Buff")
+	self:AddCategory("Muffin.Food.Buff")
+	self:AddCategory("Consumable.Food.Percent.Bonus")
+	self:AddCategory("Consumable.Food.Buff.Stamina")
+	self:AddCategory("Consumable.Food.Buff.HP Regen")
+	self:AddCategory("Consumable.Food.Buff.Other")
 end
 
 
@@ -1862,7 +1853,7 @@ function AutoBarButtonFoodCombo:init(parentBar, buttonDB)
 
 	self:AddCategory("Muffin.Food.Combo.Basic")
 	self:AddCategory("Muffin.Food.Combo.Buff")
-
+	self:AddCategory("Consumable.Food.Edible.Combo.Non-Conjured")
 end
 
 
@@ -2031,6 +2022,11 @@ function AutoBarButtonRaidTarget:init(parentBar, buttonDB)
 	AutoBarButtonRaidTarget.super.init(self, parentBar, buttonDB)
 
 	self:AddCategory("Macro.Raid Target")
+
+	-- Ping system is Retail-only
+	if (AutoBarCategoryList["Macro.Ping"]) then
+		self:AddCategory("Macro.Ping")
+	end
 end
 
 
@@ -2211,11 +2207,9 @@ end
 function AutoBarButtonTotemAir:UpdateCooldown()
 	local itemType = self.frame:GetAttribute("type")
 	if (itemType and not self.parentBar.faded) then
-		local enabled = true
-		local _, _totemName, start, duration = GetTotemInfo(totemAir)
+		local haveTotem, _totemName, start, duration = GetTotemInfo(totemAir)
 
-		if (start and duration and enabled and start > 0 and duration > 0) then
-			self.frame.cooldown:Show() -- ToDo: necessary?
+		if (haveTotem and start and duration) then
 			CooldownFrame_Set(self.frame.cooldown, start, duration, 1)
 		else
 			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
@@ -2250,12 +2244,10 @@ end
 function AutoBarButtonTotemEarth:UpdateCooldown()
 	local itemType = self.frame:GetAttribute("type")
 	if (itemType and not self.parentBar.faded) then
-		local enabled = 1
-		local _, _totemName, start, duration = GetTotemInfo(totemEarth)
+		local haveTotem, _totemName, start, duration = GetTotemInfo(totemEarth)
 
-		if (start and duration and enabled and start > 0 and duration > 0) then
-			self.frame.cooldown:Show() -- ToDo: necessary?
-			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		if (haveTotem and start and duration) then
+			CooldownFrame_Set(self.frame.cooldown, start, duration, 1)
 		else
 			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
 		end
@@ -2289,12 +2281,10 @@ end
 function AutoBarButtonTotemFire:UpdateCooldown()
 	local itemType = self.frame:GetAttribute("type")
 	if (itemType and not self.parentBar.faded) then
-		local enabled = 1
-		local _, _totemName, start, duration = GetTotemInfo(totemFire)
+		local haveTotem, _totemName, start, duration = GetTotemInfo(totemFire)
 
-		if (start and duration and enabled and start > 0 and duration > 0) then
-			self.frame.cooldown:Show() -- ToDo: necessary?
-			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		if (haveTotem and start and duration) then
+			CooldownFrame_Set(self.frame.cooldown, start, duration, 1)
 		else
 			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
 		end
@@ -2328,12 +2318,10 @@ end
 function AutoBarButtonTotemWater:UpdateCooldown()
 	local itemType = self.frame:GetAttribute("type")
 	if (itemType and not self.parentBar.faded) then
-		local enabled = 1
-		local _, _totemName, start, duration = GetTotemInfo(totemWater)
+		local haveTotem, _totemName, start, duration = GetTotemInfo(totemWater)
 
-		if (start and duration and enabled and start > 0 and duration > 0) then
-			self.frame.cooldown:Show() -- ToDo: necessary?
-			CooldownFrame_Set(self.frame.cooldown, start, duration, enabled)
+		if (haveTotem and start and duration) then
+			CooldownFrame_Set(self.frame.cooldown, start, duration, 1)
 		else
 			CooldownFrame_Set(self.frame.cooldown, 0, 0, 0)
 		end
@@ -2461,7 +2449,7 @@ AutoBar.Class["AutoBarButtonWater"] = AutoBarButtonWater
 function AutoBarButtonWater:init(parentBar, buttonDB)
 	AutoBarButtonWater.super.init(self, parentBar, buttonDB)
 
-	if (AutoBar.CLASS == "MAGE" and not buttonDB.disableConjure and not ABGData.is_mainline_wow) then
+	if (AutoBar.CLASS == "MAGE" and not buttonDB.disableConjure and (not ABGData.is_mainline_wow or ABGData.is_forever_wow)) then
 			self:AddCategory("Spell.Mage.Conjure Water")
 	end
 
@@ -2500,6 +2488,7 @@ function AutoBarButtonWaterBuff:init(parentBar, buttonDB)
 	AutoBarButtonWaterBuff.super.init(self, parentBar, buttonDB)
 
 	self:AddCategory("Muffin.Food.Mana.Buff")
+	self:AddCategory("Consumable.Water.Buff.Mana Regen")
 
 end
 
@@ -2888,7 +2877,11 @@ else
 			end
 
 			local mount_ids = C_MountJournal.GetMountIDs()
-			self.is_mount_data_missing = false
+			if (not mount_ids or #mount_ids == 0) then
+				self.is_mount_data_missing = true
+			else
+				self.is_mount_data_missing = false
+			end
 			buttonDB.is_dirty = false
 
 			wipe(category.castList)
@@ -2897,7 +2890,7 @@ else
 			for _k, id in ipairs(mount_ids) do
 				local mount_data = AB.GetMountInfoByID(id)
 				local user_selected = (mount_data.is_favourite and buttonDB.mount_show_favourites) or (not mount_data.is_favourite and buttonDB.mount_show_nonfavourites)
-	 			if (mount_data.is_usable and mount_data.is_collected and user_selected) then
+	 			if (mount_data.is_collected and not mount_data.should_hide_on_char and user_selected) then
 						local spell_name = C_Spell.GetSpellName(mount_data.spell_id)
 						if spell_name then
 							spellIconList[spell_name] = mount_data.icon
@@ -2907,9 +2900,6 @@ else
 							category.castList[cast_list_next_index] = spell_name
 							cast_list_next_index = cast_list_next_index + 1
 						end
-				elseif (mount_data.is_usable == nil) then
-					--code.log_warning("Missing data :(")
-					self.is_mount_data_missing = true
 				end
 
 			end

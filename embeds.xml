@@ -1,4 +1,4 @@
-﻿<Ui xmlns="http://www.blizzard.com/wow/ui/">
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
 
 	<Script file="libs\LibStub\LibStub.lua"/>
 	<Script file="libs\CallBackHandler-1.0\CallbackHandler-1.0.lua"/>
@@ -16,5 +16,7 @@
 	<Script file="libs\LibPeriodicTable-3.1-Misc\LibPeriodicTable-3.1-Misc.lua"/>
 	<Script file="libs\LibPeriodicTable-3.1-Tradeskill\LibPeriodicTable-3.1-Tradeskill.lua"/>
 	<Script file="libs\LibMMStickyFrames\LibMMStickyFrames.lua"/>
+
+	<Include file="AutoBarButtonTemplate.xml"/>
 
 </Ui>

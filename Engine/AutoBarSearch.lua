@@ -30,6 +30,8 @@ AutoBarSearch = {
 	registered_macros = {},
 	registered_macro_text = {},
 
+	spell_zone_restrictions = {},	-- Map of spell ID/name to zone restrictions
+
 	--This tracks the player's current inventory to filter out uneeded item changes
 	---@type integer[]
 	inventory_cache = {},
@@ -910,6 +912,159 @@ function AutoBarSearch:RebuildToyFavorites()
 end
 
 
+-- Register zone restrictions for a spell (identified by spell ID or name)
+-- p_map_ids: array or dictionary set of numeric uiMapIDs
+-- p_zone_names: array or dictionary set of string zone names
+function AutoBarSearch:RegisterSpellZoneRestriction(p_spell_identifier, p_map_ids, p_zone_names)
+	if (not p_spell_identifier) then return end
+	self.spell_zone_restrictions = self.spell_zone_restrictions or {}
+
+	local map_set = {}
+	if (type(p_map_ids) == "table") then
+		for _, map_id in ipairs(p_map_ids) do
+			if (type(map_id) == "number") then
+				map_set[map_id] = true
+			end
+		end
+		for map_id, val in pairs(p_map_ids) do
+			if (type(map_id) == "number" and val == true) then
+				map_set[map_id] = true
+			end
+		end
+	elseif (type(p_map_ids) == "number") then
+		map_set[p_map_ids] = true
+	end
+
+	local name_set = {}
+	if (type(p_zone_names) == "table") then
+		for _, name in ipairs(p_zone_names) do
+			if (type(name) == "string") then
+				name_set[name:lower()] = true
+			end
+		end
+		for name, val in pairs(p_zone_names) do
+			if (type(name) == "string" and val == true) then
+				name_set[name:lower()] = true
+			end
+		end
+	elseif (type(p_zone_names) == "string") then
+		name_set[p_zone_names:lower()] = true
+	end
+
+	-- Dynamically add localized zone names from C_Map.GetMapInfo if available
+	if (C_Map and C_Map.GetMapInfo) then
+		for map_id in pairs(map_set) do
+			local mapInfo = C_Map.GetMapInfo(map_id)
+			if (mapInfo and mapInfo.name and mapInfo.name ~= "") then
+				name_set[mapInfo.name:lower()] = true
+			end
+		end
+	end
+
+	local restriction = {
+		map_ids = map_set,
+		zone_names = name_set,
+	}
+
+	self.spell_zone_restrictions[p_spell_identifier] = restriction
+
+	if (type(p_spell_identifier) == "number") then
+		local spell_name
+		if (C_Spell and C_Spell.GetSpellInfo) then
+			local sInfo = C_Spell.GetSpellInfo(p_spell_identifier)
+			if (sInfo and sInfo.name) then spell_name = sInfo.name end
+		elseif (GetSpellInfo) then
+			spell_name = GetSpellInfo(p_spell_identifier)
+		end
+		if (spell_name) then
+			self.spell_zone_restrictions[spell_name] = restriction
+			self.spell_zone_restrictions[spell_name:lower()] = restriction
+		end
+	elseif (type(p_spell_identifier) == "string") then
+		self.spell_zone_restrictions[p_spell_identifier:lower()] = restriction
+		if (AutoBarGlobalDataObject.spell_id_list and AutoBarGlobalDataObject.spell_id_list[p_spell_identifier]) then
+			local s_id = AutoBarGlobalDataObject.spell_id_list[p_spell_identifier]
+			self.spell_zone_restrictions[s_id] = restriction
+		end
+	end
+end
+
+-- Query zone restrictions for a spell by name or ID
+function AutoBarSearch:GetSpellZoneRestriction(p_spell_name, p_spell_id)
+	if (not self.spell_zone_restrictions) then
+		return nil
+	end
+
+	if (p_spell_id and self.spell_zone_restrictions[p_spell_id]) then
+		return self.spell_zone_restrictions[p_spell_id]
+	end
+
+	if (p_spell_name) then
+		if (self.spell_zone_restrictions[p_spell_name]) then
+			return self.spell_zone_restrictions[p_spell_name]
+		end
+		local lower_name = p_spell_name:lower()
+		if (self.spell_zone_restrictions[lower_name]) then
+			return self.spell_zone_restrictions[lower_name]
+		end
+	end
+
+	return nil
+end
+
+-- Check if player is currently located in the zone defined by restriction
+function AutoBarSearch:IsPlayerInZone(p_restriction)
+	if (not p_restriction) then
+		return true
+	end
+
+	-- 1. Check map ID and ancestor map IDs via C_Map
+	if (C_Map and C_Map.GetBestMapForUnit and p_restriction.map_ids and next(p_restriction.map_ids)) then
+		local currentMapID = C_Map.GetBestMapForUnit("player")
+		if (currentMapID) then
+			if (p_restriction.map_ids[currentMapID]) then
+				return true
+			end
+
+			if (C_Map.GetMapInfo) then
+				local depth = 0
+				local mapInfo = C_Map.GetMapInfo(currentMapID)
+				while (mapInfo and mapInfo.parentMapID and mapInfo.parentMapID > 0 and depth < 6) do
+					if (p_restriction.map_ids[mapInfo.parentMapID]) then
+						return true
+					end
+					mapInfo = C_Map.GetMapInfo(mapInfo.parentMapID)
+					depth = depth + 1
+				end
+			end
+		end
+	end
+
+	-- 2. Fallback to zone text names
+	if (p_restriction.zone_names and next(p_restriction.zone_names)) then
+		if (GetZoneText) then
+			local zone = GetZoneText()
+			if (zone and zone ~= "" and p_restriction.zone_names[zone:lower()]) then
+				return true
+			end
+		end
+		if (GetRealZoneText) then
+			local realZone = GetRealZoneText()
+			if (realZone and realZone ~= "" and p_restriction.zone_names[realZone:lower()]) then
+				return true
+			end
+		end
+		if (GetSubZoneText) then
+			local subZone = GetSubZoneText()
+			if (subZone and subZone ~= "" and p_restriction.zone_names[subZone:lower()]) then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
 -- Register a spell, and figure out its spellbook index for use in tooltip
 -- Multiple calls refresh current state of the spell
 -- {spellName = {can_cast, spell_link, no_spell_check, spell_id}}
@@ -920,10 +1075,12 @@ end
 ---@return boolean
 function AutoBarSearch:RegisterSpell(p_spell_name, p_spell_id, p_no_spell_check, p_spell_link)
 
-	if (p_no_spell_check == nil) then p_no_spell_check = false; end
-
 	---@type ABSpellInfo
 	local spellInfo = AutoBarSearch.registered_spells[p_spell_name]
+
+	if (p_no_spell_check == nil) then
+		p_no_spell_check = (spellInfo and spellInfo.no_spell_check) or false
+	end
 
 	--local debug = (p_spell_name == "Wild Charge")
 	--if (debug) then print("AutoBarSearch:RegisterSpell", "Name:",p_spell_name, p_no_spell_check, p_spell_link, code.GetSpellLink(p_spell_name)); end
@@ -984,6 +1141,15 @@ function AutoBarSearch:RegisterSpell(p_spell_name, p_spell_id, p_no_spell_check,
 	spellInfo.no_spell_check = p_no_spell_check
 
 	spellInfo.can_cast = (spellInfo.spell_link ~= nil) or spellInfo.no_spell_check
+
+	if (spellInfo.can_cast) then
+		local restriction = self:GetSpellZoneRestriction(p_spell_name, spell_id)
+		if (restriction and not self:IsPlayerInZone(restriction)) then
+			spellInfo.spell_link = nil
+			spellInfo.can_cast = false
+			return false
+		end
+	end
 
 	return spellInfo.can_cast
 end
@@ -1147,6 +1313,9 @@ function AutoBarSearch:UpdateScan()
 
 	AutoBarSearch.dirty.spells = true
 	AutoBarSearch.dirty.macros = true
+	AutoBarSearch.dirty.macro_text = true
+	AutoBarSearch.dirty.toybox = true
+	AutoBarSearch.dirty.inventory = true
 
 	AutoBarSearch:ScanAll()
 
@@ -1212,7 +1381,7 @@ end
 function AutoBarSearch:ScanRegisteredSpells()
 
 	for name, info in pairs(self.registered_spells) do
-		local can_cast = self:RegisterSpell(name, info.spell_id)
+		local can_cast = self:RegisterSpell(name, info.spell_id, info.no_spell_check, info.spell_link)
 		if (can_cast) then
 			self.found:Add(name, nil, nil, name)
 		else

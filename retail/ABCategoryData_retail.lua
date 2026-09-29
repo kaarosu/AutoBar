@@ -158,8 +158,12 @@ function AB.InitializeCategories()
 		"MAGE", code.get_spell_name_by_name("Conjure Refreshment"),
 	})
 
+	AutoBarCategoryList["Spell.Mage.Conjure Water"] = SpellsCategory:new("Spell.Mage.Conjure Water", spellIconList["Conjure Water"] or spellIconList["Conjure Refreshment"], {
+		"MAGE", code.get_spell_name_by_name("Conjure Water"), code.get_spell_name_by_name("Conjure Refreshment"),
+	})
+
 	AutoBarCategoryList["Consumable.Water.Conjure"] = SpellsCategory:new("Consumable.Water.Conjure", spellIconList["Conjure Refreshment"], {
-		"MAGE", code.get_spell_name_by_name("Conjure Refreshment"),
+		"MAGE", code.get_spell_name_by_name("Conjure Refreshment"), code.get_spell_name_by_name("Conjure Water"),
 	})
 
 	AutoBarCategoryList["Consumable.Food.Conjure"] = SpellsCategory:new("Consumable.Food.Conjure", spellIconList["Conjure Refreshment"], {
@@ -503,13 +507,11 @@ function AB.InitializeCategories()
 		"SHAMAN", code.get_spell_name_by_name("Thunderstrike Ward"),
 	})
 
-	AutoBarCategoryList["Spell.Crafting"] = SpellsCategory:new( "Spell.Crafting", spellIconList["First Aid"],
+	AutoBarCategoryList["Spell.Crafting"] = SpellsCategory:new( "Spell.Crafting", spellIconList["Blacksmithing"] or spellIconList["Engineering"] or "Interface\\Icons\\Trade_Engineering",
 	{
 		"*", code.get_spell_name_by_name("Alchemy"),
 		"*", code.get_spell_name_by_name("Archaeology"),
-		"*", code.get_spell_name_by_name("Cooking Fire"),
 		"*", code.get_spell_name_by_name("Blacksmithing"),
-		"*", code.get_spell_name_by_name("Cooking"),
 		"*", code.get_spell_name_by_name("Disenchant"),
 		"*", code.get_spell_name_by_name("Enchanting"),
 		"*", code.get_spell_name_by_name("Engineering"),
@@ -530,6 +532,18 @@ function AB.InitializeCategories()
 		"DEATHKNIGHT", code.get_spell_name_by_name("Runeforging"),
 	})
 
+	AutoBarCategoryList["Spell.First Aid"] = SpellsCategory:new("Spell.First Aid", spellIconList["First Aid"] or "Interface\\Icons\\Spell_Holy_SealOfSacrifice",
+	{
+		"*", code.get_spell_name_by_name("First Aid"),
+	})
+
+	AutoBarCategoryList["Spell.Cooking"] = SpellsCategory:new("Spell.Cooking", spellIconList["Cooking"] or "Interface\\Icons\\INV_Misc_Food_15",
+	{
+		"*", code.get_spell_name_by_name("Cooking"),
+		"*", code.get_spell_name_by_name("Basic Campfire"),
+		"*", code.get_spell_name_by_name("Cooking Fire"),
+	})
+
 	AutoBarCategoryList["Spell.Archaeology"] = SpellsCategory:new("Spell.Archaeology", spellIconList["Archaeology"], nil,
 	{
 		"*",	code.get_spell_name_by_name("Survey"), code.get_spell_name_by_name("Archaeology"),
@@ -541,6 +555,37 @@ function AB.InitializeCategories()
 		"*", code.get_spell_name_by_name("Anomaly Detection Mark I"),
 		"*", code.get_spell_name_by_name("Mechanism Bypass"),
 	})
+
+	-- Zone restrictions for zone-specific spells
+	-- Vindicaar Matrix Crystal is only usable on Argus
+	AutoBarSearch:RegisterSpellZoneRestriction(251463,
+		{ 905, 830, 882, 885, 859, 831, 883, 884 },
+		{ "argus", "krokuun", "antoran wastes", "mac'aree", "eredath", "the vindicaar", "vindicaar" }
+	)
+	AutoBarSearch:RegisterSpellZoneRestriction("Vindicaar Matrix Crystal",
+		{ 905, 830, 882, 885, 859, 831, 883, 884 },
+		{ "argus", "krokuun", "antoran wastes", "mac'aree", "eredath", "the vindicaar", "vindicaar" }
+	)
+
+	-- Anomaly Detection Mark I is only usable in Dragon Isles
+	AutoBarSearch:RegisterSpellZoneRestriction(294954,
+		{ 1978, 2022, 2023, 2024, 2025, 2112, 2151, 2133, 2200, 2085 },
+		{ "dragon isles", "the waking shores", "waking shores", "ohn'ahran plains", "the azure span", "azure span", "thaldraszus", "valdrakken", "the forbidden reach", "forbidden reach", "zaralek cavern", "emerald dream", "primalist tomorrow" }
+	)
+	AutoBarSearch:RegisterSpellZoneRestriction("Anomaly Detection Mark I",
+		{ 1978, 2022, 2023, 2024, 2025, 2112, 2151, 2133, 2200, 2085 },
+		{ "dragon isles", "the waking shores", "waking shores", "ohn'ahran plains", "the azure span", "azure span", "thaldraszus", "valdrakken", "the forbidden reach", "forbidden reach", "zaralek cavern", "emerald dream", "primalist tomorrow" }
+	)
+
+	-- Mechanism Bypass is only usable in Dragon Isles
+	AutoBarSearch:RegisterSpellZoneRestriction(299064,
+		{ 1978, 2022, 2023, 2024, 2025, 2112, 2151, 2133, 2200 },
+		{ "dragon isles", "the waking shores", "waking shores", "ohn'ahran plains", "the azure span", "azure span", "thaldraszus", "valdrakken", "the forbidden reach", "forbidden reach", "zaralek cavern", "emerald dream" }
+	)
+	AutoBarSearch:RegisterSpellZoneRestriction("Mechanism Bypass",
+		{ 1978, 2022, 2023, 2024, 2025, 2112, 2151, 2133, 2200 },
+		{ "dragon isles", "the waking shores", "waking shores", "ohn'ahran plains", "the azure span", "azure span", "thaldraszus", "valdrakken", "the forbidden reach", "forbidden reach", "zaralek cavern", "emerald dream" }
+	)
 
 	AutoBarCategoryList["Spell.Racial"] = SpellsCategory:new("Spell.Racial", spellIconList["Shadowmeld"],
 	{
@@ -882,6 +927,13 @@ function AB.InitializeCategories()
 		"DRUID", code.get_spell_name_by_name("Travel Form"),
 		"SHAMAN", code.get_spell_name_by_name("Ghost Wolf"),
 	})
+
+	-- Ping System (Retail only)
+	AutoBarCategoryList["Macro.Ping"] = MacroTextCategory:new("Macro.Ping", "Ping_Wheel_Icon_Attack")
+	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] attack", "Ping_Wheel_Icon_Attack", L["Ping Attack"])
+	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] assist", "Ping_Wheel_Icon_Assist", L["Ping Assist"])
+	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] warning", "Ping_Wheel_Icon_Warning", L["Ping Warning"])
+	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] onmyway", "Ping_Wheel_Icon_OnMyWay", L["Ping On My Way"])
 
 end
 

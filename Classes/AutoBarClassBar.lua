@@ -100,6 +100,7 @@ function Bar:init(p_bar_key)
 
 	self.buttonList = {}		-- Button by index
 	self.activeButtonList = {}	-- Button by index, non-empty & enabled ones only
+	self.layoutDirty = true
 	self:UpdateObjects()
 end
 
@@ -312,12 +313,16 @@ function Bar:UpdateActive()
 	local maxButtons = # self.buttonList
 	local activeIndex = 1
 	local maxActiveButtons = self.sharedLayoutDB.rows * self.sharedLayoutDB.columns
+	local changed = false
 
 	--print("Bar:UpdateActive maxButtons " .. tostring(maxButtons))
 	for index = 1, maxButtons, 1 do
 		local button = self.buttonList[index]
 		if (button and button:IsActive()) then
 			--if (button.buttonName == "AutoBarButtonCharge") then print("AB.Class.Bar.proto:UpdateActive Active ", activeIndex, button.buttonName, button:IsActive()) end;
+			if (activeButtonList[activeIndex] ~= button) then
+				changed = true
+			end
 			activeButtonList[activeIndex] = button
 			activeIndex = activeIndex + 1
 			if (button.SecureStateDriverRegistered == false) then
@@ -325,7 +330,9 @@ function Bar:UpdateActive()
 				button.SecureStateDriverRegistered = true
 			end
 
-			button.frame:Show()
+			if (not button.frame:IsShown()) then
+				button.frame:Show()
+			end
 		elseif (button) then
 			--if (button.buttonName == "AutoBarButtonCharge") then print("Bar:UpdateActive Inactive " .. tostring(index) .. " " .. tostring(button.buttonName)) end
 			if (button.SecureStateDriverRegistered ~= false) then
@@ -333,7 +340,9 @@ function Bar:UpdateActive()
 				button.SecureStateDriverRegistered = false
 			end
 
-			button.frame:Hide()
+			if (button.frame:IsShown()) then
+				button.frame:Hide()
+			end
 		end
 	end
 
@@ -344,11 +353,16 @@ function Bar:UpdateActive()
 	end
 
 	-- Trim Excess
+	if (#activeButtonList >= activeIndex) then
+		changed = true
+	end
 	for i = activeIndex, # activeButtonList, 1 do
 		local button = activeButtonList[i]
 		button:Disable()
 		activeButtonList[i] = nil
 	end
+
+	return changed
 end
 -- /dump AutoBar.buttonListDisabled
 -- /dump (# AutoBar.buttonList)
@@ -532,8 +546,10 @@ end
 function Bar:CreateDragFrame()
 	if (not self.dragFrame) then
 		local name = self.barKey .. "DragFrame"
-		local frame = CreateFrame("Button", name, self.frame, "ActionButtonTemplate SecureActionButtonTemplate SecureHandlerDragTemplate")
-		frame:GetNormalTexture():Hide()
+		local frame = CreateFrame("Button", name, self.frame, "SecureHandlerDragTemplate")
+		if (frame.GetNormalTexture and frame:GetNormalTexture()) then
+			frame:GetNormalTexture():Hide()
+		end
 		code.ClearNormalTexture(frame)
 		self.dragFrame = frame
 	--print(tostring(self.parentBar.frame) .. " ->  " .. tostring(frame) .. " button " .. tostring(name))
@@ -756,16 +772,31 @@ function Bar:RefreshButtonLayout()
 	local pad_btn_width = ABGData.default_button_width + padding
 	local pad_btn_height = ABGData.default_button_height + padding
 
-	--TODO: Clean up those SetPoint calls. Poor perf, and they're ugly
 	local nButtons = # activeButtonList
 	local frame
 	for i = 1, nButtons do
 		frame = activeButtonList[i].frame
-		frame:ClearAllPoints()
-		frame:SetHeight(ABGData.default_button_height)
-		frame:SetWidth(ABGData.default_button_width)
-		frame:SetScale(1)
-		frame:SetPoint(alignPoint, anchorFrame, alignPoint, ((i - 1) % columns) * signX * pad_btn_width + signX * padding + centerShiftX, (math.floor((i - 1) / columns)) * signY * (ABGData.default_button_height + padding) + signY * padding + centerShiftY)
+		local targetX = ((i - 1) % columns) * signX * pad_btn_width + signX * padding + centerShiftX
+		local targetY = (math.floor((i - 1) / columns)) * signY * (ABGData.default_button_height + padding) + signY * padding + centerShiftY
+		if (frame:GetNumPoints() == 1) then
+			local point, relTo, relPoint, x, y = frame:GetPoint(1)
+			if (point ~= alignPoint or relTo ~= anchorFrame or relPoint ~= alignPoint or math.abs((x or 0) - targetX) > 0.05 or math.abs((y or 0) - targetY) > 0.05) then
+				frame:ClearAllPoints()
+				frame:SetPoint(alignPoint, anchorFrame, alignPoint, targetX, targetY)
+			end
+		else
+			frame:ClearAllPoints()
+			frame:SetPoint(alignPoint, anchorFrame, alignPoint, targetX, targetY)
+		end
+		if (frame:GetHeight() ~= ABGData.default_button_height) then
+			frame:SetHeight(ABGData.default_button_height)
+		end
+		if (frame:GetWidth() ~= ABGData.default_button_width) then
+			frame:SetWidth(ABGData.default_button_width)
+		end
+		if (frame:GetScale() ~= 1) then
+			frame:SetScale(1)
+		end
 	end
 
 	-- Dummy drag button for empty bar and end of bar drags
@@ -784,8 +815,12 @@ end
 
 
 function Bar:RefreshScale()
-	self.frame:SetScale(self.sharedLayoutDB.scale or 1)
-	self:PositionLoad()
+	local targetScale = self.sharedLayoutDB.scale or 1
+	if (self.frame:GetScale() ~= targetScale or not self.positionLoaded) then
+		self.frame:SetScale(targetScale)
+		self:PositionLoad()
+		self.positionLoaded = true
+	end
 end
 
 

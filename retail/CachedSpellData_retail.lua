@@ -620,6 +620,9 @@ code.cache_spell_data(26790, "Tailoring");
 code.cache_spell_data(131474, "Fishing");
 code.cache_spell_data(201891, "Undercurrent");
 
+code.cache_spell_data(3273, "First Aid");
+code.cache_spell_data(818, "Basic Campfire");
+code.cache_spell_data(5504, "Conjure Water");
 code.cache_spell_data(194174, "Skinning Journal");
 code.cache_spell_data(271990, "Fishing Journal");
 code.cache_spell_data(193290, "Herbalism Journal");

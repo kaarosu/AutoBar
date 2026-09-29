@@ -296,19 +296,27 @@ function AB.InitializeCategories()
 		"SHAMAN", code.get_spell_name_by_name("Windfury Weapon"),
 	})
 
-	AutoBarCategoryList["Spell.Crafting"] = SpellsCategory:new( "Spell.Crafting", spellIconList["First Aid"],
+	AutoBarCategoryList["Spell.Crafting"] = SpellsCategory:new( "Spell.Crafting", spellIconList["Blacksmithing"] or spellIconList["Engineering"] or "Interface\\Icons\\Trade_Engineering",
 	{
 		"*", code.get_spell_name_by_name("Alchemy"),
-		"*", code.get_spell_name_by_name("Basic Campfire"),
 		"*", code.get_spell_name_by_name("Blacksmithing"),
-		"*", code.get_spell_name_by_name("Cooking"),
 		"*", code.get_spell_name_by_name("Disenchant"),
 		"*", code.get_spell_name_by_name("Enchanting"),
 		"*", code.get_spell_name_by_name("Engineering"),
-		"*", code.get_spell_name_by_name("First Aid"),
 		"*", code.get_spell_name_by_name("Leatherworking"),
 		"*", code.get_spell_name_by_name("Smelting"),
 		"*", code.get_spell_name_by_name("Tailoring"),
+	})
+
+	AutoBarCategoryList["Spell.First Aid"] = SpellsCategory:new("Spell.First Aid", spellIconList["First Aid"] or "Interface\\Icons\\Spell_Holy_SealOfSacrifice",
+	{
+		"*", code.get_spell_name_by_name("First Aid"),
+	})
+
+	AutoBarCategoryList["Spell.Cooking"] = SpellsCategory:new("Spell.Cooking", spellIconList["Cooking"] or "Interface\\Icons\\INV_Misc_Food_15",
+	{
+		"*", code.get_spell_name_by_name("Cooking"),
+		"*", code.get_spell_name_by_name("Basic Campfire"),
 	})
 
 	AutoBarCategoryList["Spell.Debuff.Multiple"] = SpellsCategory:new("Spell.Debuff.Multiple", spellIconList["Slow"],

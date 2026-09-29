@@ -46,6 +46,109 @@ AutoBar.Class.BasicButton = Class()
 function AutoBar.Class.BasicButton:init(parentBar, buttonDB)
 end
 
+function AutoBar.Class.BasicButton:InitializeVisuals(frame, name)
+	local slotBg = frame.SlotBackground or _G[name .. "SlotBg"]
+	if (not slotBg) then
+		slotBg = frame:CreateTexture(name .. "SlotBg", "BACKGROUND", nil, -1)
+		slotBg:SetAllPoints()
+		_G[name .. "SlotBg"] = slotBg
+	end
+	frame.SlotBackground = slotBg
+	if (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Background")) then
+		slotBg:SetAtlas("UI-HUD-ActionBar-IconFrame-Background")
+	elseif (slotBg.SetColorTexture) then
+		slotBg:SetColorTexture(0, 0, 0, 0.6)
+	end
+
+	local icon = frame.icon or _G[name .. "Icon"]
+	if (not icon) then
+		icon = frame:CreateTexture(name .. "Icon", "BORDER", nil, 0)
+		icon:SetAllPoints()
+		_G[name .. "Icon"] = icon
+	end
+	if (icon.SetDrawLayer) then
+		icon:SetDrawLayer("BORDER", 0)
+	end
+	frame.icon = icon
+
+	local border = frame.border or _G[name .. "Border"]
+	if (not border) then
+		border = frame:CreateTexture(name .. "Border", "BORDER")
+		border:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+		border:SetBlendMode("ADD")
+		border:Hide()
+		border:SetPoint("CENTER", frame, "CENTER")
+		_G[name .. "Border"] = border
+	end
+	frame.border = border
+
+	local flash = frame.flash or _G[name .. "Flash"]
+	if (not flash) then
+		flash = frame:CreateTexture(name .. "Flash", "ARTWORK")
+		flash:Hide()
+		_G[name .. "Flash"] = flash
+	end
+	frame.flash = flash
+
+	local hotKey = frame.hotKey or _G[name .. "HotKey"]
+	if (not hotKey) then
+		hotKey = frame:CreateFontString(name .. "HotKey", "ARTWORK", "NumberFontNormalSmallGray")
+		hotKey:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -2, -2)
+		hotKey:SetJustifyH("RIGHT")
+		_G[name .. "HotKey"] = hotKey
+	end
+	frame.hotKey = hotKey
+
+	local count = frame.count or _G[name .. "Count"]
+	if (not count) then
+		count = frame:CreateFontString(name .. "Count", "ARTWORK", "NumberFontNormal")
+		count:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+		count:SetJustifyH("RIGHT")
+		_G[name .. "Count"] = count
+	end
+	frame.count = count
+
+	local macroName = frame.macroName or _G[name .. "Name"]
+	if (not macroName) then
+		macroName = frame:CreateFontString(name .. "Name", "OVERLAY", "GameFontHighlightSmallOutline")
+		macroName:SetPoint("BOTTOM", frame, "BOTTOM", 0, 2)
+		_G[name .. "Name"] = macroName
+	end
+	frame.macroName = macroName
+
+	local cooldown = frame.cooldown or _G[name .. "Cooldown"]
+	if (not cooldown) then
+		cooldown = CreateFrame("Cooldown", name .. "Cooldown", frame, "CooldownFrameTemplate")
+		cooldown:SetAllPoints()
+		_G[name .. "Cooldown"] = cooldown
+	end
+	frame.cooldown = cooldown
+
+	local normalTexture = frame:GetNormalTexture()
+	if (not normalTexture) then
+		normalTexture = frame:CreateTexture(name .. "NormalTexture", "BACKGROUND", nil, 0)
+		frame:SetNormalTexture(normalTexture)
+	end
+	if (normalTexture and normalTexture.SetDrawLayer) then
+		normalTexture:SetDrawLayer("BACKGROUND", 0)
+	end
+	frame.normalTexture = normalTexture
+	if (C_Texture and C_Texture.GetAtlasInfo and C_Texture.GetAtlasInfo("UI-HUD-ActionBar-IconFrame-Slot")) then
+		normalTexture:SetAtlas("UI-HUD-ActionBar-IconFrame-Slot")
+	end
+	if (not frame:GetPushedTexture()) then
+		frame:SetPushedTexture("Interface\\Buttons\\UI-Quickslot-Depress")
+	end
+	if (not frame:GetHighlightTexture()) then
+		frame:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+	end
+	if (frame.GetCheckedTexture and not frame:GetCheckedTexture()) then
+		if (frame.SetCheckedTexture) then
+			frame:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight", "ADD")
+		end
+	end
+end
+
 
 -- OnLeave function.  Added to a button to allow calling it via control:CallMethod("TooltipHide")
 function AutoBar.Class.BasicButton.TooltipHide()
