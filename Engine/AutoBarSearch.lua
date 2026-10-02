@@ -698,6 +698,7 @@ function Sorted:Update(p_button_key)
 			if (self.dirtyList[buttonKey]) then
 				if (sortList) then
 					table.sort(sortList, SortBySlotCategory)
+					self.promotedList[buttonKey] = nil
 					self:SetBest(buttonKey)
 				end
 				self.dirtyList[buttonKey] = nil
@@ -795,9 +796,30 @@ end
 -- Swap item to front if found
 function Sorted:SwapToFront(sortedItems, itemId)
 	for sortedIndex, sortedItemData in ipairs(sortedItems) do
-		if (itemId == sortedItemData.itemId) then
+		if (itemId == sortedItemData.itemId or (tostring(itemId) == tostring(sortedItemData.itemId))) then
 			swap(sortedItems, 1, sortedIndex)
 			return true
+		end
+	end
+	if (type(itemId) == "string" and C_Spell and C_Spell.GetSpellIDForSpellIdentifier) then
+		local sId = C_Spell.GetSpellIDForSpellIdentifier(itemId)
+		if (sId) then
+			for sortedIndex, sortedItemData in ipairs(sortedItems) do
+				if (sortedItemData.itemId == sId or (type(sortedItemData.itemId) == "string" and C_Spell.GetSpellIDForSpellIdentifier(sortedItemData.itemId) == sId)) then
+					swap(sortedItems, 1, sortedIndex)
+					return true
+				end
+			end
+		end
+	elseif (type(itemId) == "number" and C_Spell and C_Spell.GetSpellInfo) then
+		local sInfo = C_Spell.GetSpellInfo(itemId)
+		if (sInfo and sInfo.name) then
+			for sortedIndex, sortedItemData in ipairs(sortedItems) do
+				if (sortedItemData.itemId == sInfo.name) then
+					swap(sortedItems, 1, sortedIndex)
+					return true
+				end
+			end
 		end
 	end
 	return nil
@@ -1129,7 +1151,13 @@ function AutoBarSearch:RegisterSpell(p_spell_name, p_spell_id, p_no_spell_check,
 			isKnown = true
 		end
 
+		-- If we knew it before, don't un-know it just because a link check failed temporarily
+		if (not isKnown and spellInfo.was_known) then
+			isKnown = true
+		end
+
 		if (isKnown) then
+			spellInfo.was_known = true
 			spellInfo.spell_link = link or (spell_id and code.GetSpellLink(spell_id)) or (spell_id and ("spell:" .. spell_id)) or ("spell:" .. p_spell_name)
 		elseif (p_no_spell_check) then
 			spellInfo.spell_link = link or (spell_id and code.GetSpellLink(spell_id)) or (spell_id and ("spell:" .. spell_id)) or "spell:0"
@@ -1397,11 +1425,16 @@ function AutoBarSearch:ScanRegisteredMacros()
 
 	for macro_id, macroInfo in pairs(self.registered_macros) do
 		local keep = false
-		if (macroInfo.macroIndex) then
-			local _name, _icon_texture, body = GetMacroInfo(macroInfo.macroIndex)
-			keep = (body ~= nil)
-		else
-			keep = (macroInfo.macroText ~= nil)
+		local _name, _icon_texture, body
+		if (macroInfo.macroName) then
+			_name, _icon_texture, body = GetMacroInfo(macroInfo.macroName)
+		end
+		if not _name and macroInfo.macroIndex then
+			_name, _icon_texture, body = GetMacroInfo(macroInfo.macroIndex)
+		end
+		
+		if _name then
+			keep = true
 		end
 
 		if(keep) then
@@ -1434,9 +1467,11 @@ local function add_found_item(p_item_id, p_bag, p_slot)
 
 	-- Filter out too high level items
 	local itemMinLevel = select(5, code.GetItemInfo(p_item_id)) or 0;
-	local usable = code.IsUsableItem(p_item_id);
+	-- item_spell is the real usability gate: pure crafting reagents (herbs, ore, cloth, etc.)
+	-- have no on-use spell and should never appear as buttons in a bar.
+	-- code.IsUsableItem() is stubbed to always return true, so we rely solely on item_spell.
 	local item_spell = AB.GetItemSpell(p_item_id);
-	if (itemMinLevel <= AutoBar.player_level and (usable or item_spell)) then
+	if (itemMinLevel <= AutoBar.player_level and item_spell) then
 		AutoBarSearch.found:Add(p_item_id, p_bag, p_slot, nil)
 	end
 --print("Stuff:Add bag " .. tostring(bag) .. " slot " .. tostring(slot))

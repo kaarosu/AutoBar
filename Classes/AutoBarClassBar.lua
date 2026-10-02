@@ -491,6 +491,15 @@ function Bar:ColorBars()
 		frame:SetFrameStrata(self.sharedLayoutDB.frameStrata)
 		self:SetButtonFrameStrata(self.sharedLayoutDB.frameStrata)
 		frame.text:SetText(self.barName)
+		-- Clear any leftover backdrop color from moveButtonsMode so bars don't ghost
+		frame:SetBackdropColor(0, 0, 0, 0)
+		frame:SetBackdropBorderColor(0, 0, 0, 0)
+		-- Show/hide correctly so hidden bars don't leave a visible ghost
+		if (self.sharedLayoutDB.hide) then
+			frame:Hide()
+		else
+			frame:Show()
+		end
 	else
 		if (self.sharedLayoutDB.hide) then
 			self.frame:Hide()

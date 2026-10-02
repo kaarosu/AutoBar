@@ -255,6 +255,7 @@ if (GetLocale() == "enUS") then
 		["AutoBarButtonBoomkinTree"] = "Tree of Life / Boomkin",
 		["AutoBarButtonCat"] = "Cat",
 		["AutoBarButtonTravel"] = "Travel",
+		["AutoBarButtonPlayerMacros"] = "Macros",
 
 		-- AutoBarClassButton.lua
 		["Spacebar"] = KEY_SPACE,
@@ -430,6 +431,7 @@ if (GetLocale() == "enUS") then
 		["Spell.First Aid"] = "First Aid";
 		["Spell.Cooking"] = "Cooking";
 		["Spell.Critter"] = "Pet Spells";
+		["Spell.DH.Devourer"] = "Devourer (Midnight)";	-- New DH spec in Midnight expansion
 		["Spell.Debuff.Multiple"] = "Debuff: Multiple";
 		["Spell.Debuff.Single"] = "Debuff: Single";
 		["Spell.Fishing"] = "Fishing";

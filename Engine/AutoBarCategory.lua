@@ -372,6 +372,69 @@ end
 
 --#endregion MacroTextCategory
 
+--#region PlayerMacroCategory
+-- Dynamically discovers macros from the player's macro book and registers them as button candidates.
+-- WoW macro layout (retail):
+--   Indices 1..120  = account-wide macros  (GetNumMacros() returns accountCount, charCount)
+--   Indices 121..138 = character-specific macros (max 18 per character)
+--
+-- scope: "account" | "character" | nil (= both)
+---@class PlayerMacroCategory: CategoryClass
+---@field macro_scope string|nil
+
+AB.PlayerMacroCategory = CreateFromMixins(CategoryClass)
+local PlayerMacroCategory = AB.PlayerMacroCategory  ---@class PlayerMacroCategory
+
+local ACCOUNT_MACRO_START = 1
+local ACCOUNT_MACRO_MAX   = 120
+local CHAR_MACRO_START    = 121
+local CHAR_MACRO_MAX      = 138
+
+---@param p_description string
+---@param p_texture number|string
+---@param p_scope string|nil  "account", "character", or nil for both
+---@return PlayerMacroCategory
+function PlayerMacroCategory:new(p_description, p_texture, p_scope)
+	assert(type(p_description) == "string")
+	local obj = CreateFromMixins(self)
+	obj:init(p_description, p_texture)
+	obj.macro_scope = p_scope  -- "account" | "character" | nil
+	return obj
+end
+
+-- Called by the framework to rebuild the items list.
+-- Iterates GetNumMacros() to find populated slots and registers each one.
+function PlayerMacroCategory:Refresh()
+	-- Clear the items list for a fresh scan
+	wipe(self.items)
+
+	local accountCount, charCount = GetNumMacros()
+
+	-- Modern WoW macros are assigned in specific slots. Account 1-120, Character 121-138.
+	-- If users delete macros, slots may become sparse. Scan the full possible ranges.
+	local ranges = {}
+	if (self.macro_scope == nil or self.macro_scope == "account") then
+		ranges[#ranges + 1] = { start = 1, stop = 120 }
+	end
+	if (self.macro_scope == nil or self.macro_scope == "character") then
+		ranges[#ranges + 1] = { start = 121, stop = 150 }
+	end
+
+	for _, range in ipairs(ranges) do
+		for i = range.start, range.stop do
+			local name, _iconTexture, body = GetMacroInfo(i)
+			if name then
+				local macroId = "macro" .. i
+				-- Pass the body as the 4th parameter so AutoBar can use macrotext if needed
+				AutoBarSearch:RegisterMacro(macroId, i, name, body or "")
+				self.items[#self.items + 1] = macroId
+			end
+		end
+	end
+end
+
+--#endregion PlayerMacroCategory
+
 --#region SpellsCategory
 -- Category consisting of spells
 ---@class SpellsCategory: CategoryClass

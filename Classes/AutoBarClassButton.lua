@@ -86,6 +86,10 @@ function AutoBar.Class.Button:init(parentBar, buttonDB)
 		self.buttonDB.square_popups = true
 	end
 
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
+
 	self.buttonName = buttonDB.buttonKey
 	self.buttonDBIndex = buttonDB.order
 	self:CreateButtonFrame()
@@ -576,8 +580,13 @@ function AutoBar.Class.Button:UpdateButton()
 
 	if (AutoBar.moveButtonsMode) then
 		frame.macroName:SetText(AB.GetButtonDisplayName(self.buttonDB))
---	elseif self.parentBar.sharedLayoutDB.showMacrotext then
---		frame.macroName:SetText(GetActionText(self.action))
+	elseif (itemType == "macro") then
+		local mName = frame:GetAttribute("macroName") or frame:GetAttribute("macro")
+		if type(mName) == "number" then
+			local name = GetMacroInfo(mName)
+			mName = name
+		end
+		frame.macroName:SetText(mName or "")
 	else
 		frame.macroName:SetText("")
 	end

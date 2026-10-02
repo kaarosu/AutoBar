@@ -9,6 +9,7 @@ local spellIconList = ABGData.spell_icon_list
 local L = AutoBarGlobalDataObject.locale
 local ItemsCategory = AB.ItemsCategory
 local MacroTextCategory = AB.MacroTextCategory
+local PlayerMacroCategory = AB.PlayerMacroCategory
 local SpellsCategory = AB.SpellsCategory
 
 --#region ToyCategory
@@ -230,7 +231,7 @@ function AB.InitializeCategories()
 		"SHAMAN", code.get_spell_name_by_name("Skyfury"),
 		"SHAMAN", code.get_spell_name_by_name("Water Walking"),
 		"SHAMAN", code.get_spell_name_by_name("Water Breathing"),
-		"SHAMAN", code.get_spell_name_by_name("Astral Recall"),
+		-- Astral Recall removed here: it already lives in Spell.Portals (line ~340)
 		"WARLOCK", code.get_spell_name_by_name("Unending Breath"),
 		"WARLOCK", code.get_spell_name_by_name("Soulstone"),
 		"WARRIOR", code.get_spell_name_by_name("Battle Shout"),
@@ -239,7 +240,7 @@ function AB.InitializeCategories()
 
 	AutoBarCategoryList["Spell.Class.Pet"] = SpellsCategory:new( "Spell.Class.Pet", spellIconList["Call Pet 1"],
 	{
-		"DEATHKNIGHT", code.get_spell_name_by_name("Dancing Rune Weapon"),
+		-- Dancing Rune Weapon is a major CD (Blood DK), not a pet — moved to Spell.ER
 		"DEATHKNIGHT", code.get_spell_name_by_name("Raise Dead"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Army of the Dead"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Summon Gargoyle"),
@@ -250,6 +251,7 @@ function AB.InitializeCategories()
 		"HUNTER", code.get_spell_name_by_name("Call Pet 5"),
 		"MAGE", code.get_spell_name_by_name("Summon Water Elemental"),
 		"MONK", code.get_spell_name_by_name("Storm, Earth, and Fire"),
+		-- Monk celestials are major 3-min CDs — also tracked in Spell.ER
 		"MONK", code.get_spell_name_by_name("Invoke Xuen, the White Tiger"),
 		"MONK", code.get_spell_name_by_name("Invoke Niuzao, the Black Ox"),
 		"MONK", code.get_spell_name_by_name("Invoke Chi-Ji, the Red Crane"),
@@ -272,16 +274,17 @@ function AB.InitializeCategories()
 
 	AutoBarCategoryList["Spell.Class.Pets2"] = SpellsCategory:new( "Spell.Class.Pets2", spellIconList["Call Pet 1"],
 	{
+		-- DK: major CD that transforms the Ghoul
 		"DEATHKNIGHT", code.get_spell_name_by_name("Dark Transformation"),
-		"HUNTER", code.get_spell_name_by_name("Kill Command"),
+		-- Hunter: Bestial Wrath kept (1.5-min BM major CD), Intimidation kept (1-min CC stun)
+		-- Removed: Kill Command (7.5s rotational), Mend Pet (pet heal), Master's Call (PvP utility)
 		"HUNTER", code.get_spell_name_by_name("Bestial Wrath"),
-		"HUNTER", code.get_spell_name_by_name("Master's Call"),
-		"HUNTER", code.get_spell_name_by_name("Mend Pet"),
 		"HUNTER", code.get_spell_name_by_name("Intimidation"),
+		-- Warlock: major CDs and summon utilities kept
+		-- Removed: Call Dreadstalkers (~15s rotational Demo builder)
 		"WARLOCK", code.get_spell_name_by_name("Command Demon"),
 		"WARLOCK", code.get_spell_name_by_name("Eye of Kilrogg"),
 		"WARLOCK", code.get_spell_name_by_name("Summon Infernal"),
-		"WARLOCK", code.get_spell_name_by_name("Call Dreadstalkers"),
 		"WARLOCK", code.get_spell_name_by_name("Grimoire of Sacrifice"),
 		"WARLOCK", code.get_spell_name_by_name("Summon Darkglare"),
 		"WARLOCK", code.get_spell_name_by_name("Summon Demonic Tyrant"),
@@ -398,27 +401,33 @@ function AB.InitializeCategories()
 
 	AutoBarCategoryList["Spell.Shields"] = SpellsCategory:new( "Spell.Shields", spellIconList["Ice Barrier"], nil,
 	{
-		"DEMONHUNTER",	 code.get_spell_name_by_name("Blur"), 	code.get_spell_name_by_name("Darkness"),
-		"DEATHKNIGHT", code.get_spell_name_by_name("Anti-Magic Shell"), 	code.get_spell_name_by_name("Icebound Fortitude"),
-		"DEATHKNIGHT", code.get_spell_name_by_name("Icebound Fortitude"), 	code.get_spell_name_by_name("Anti-Magic Shell"),
-		"DRUID", 		code.get_spell_name_by_name("Barkskin"), 	code.get_spell_name_by_name("Barkskin"),
-		"EVOKER", 		code.get_spell_name_by_name("Obsidian Scales"), code.get_spell_name_by_name("Renewing Blaze"),
-		"HUNTER", 		code.get_spell_name_by_name("Aspect of the Turtle"), 	code.get_spell_name_by_name("Aspect of the Turtle"),
-		"MAGE", 			code.get_spell_name_by_name("Ice Barrier"), code.get_spell_name_by_name("Ice Barrier"),
-		"MAGE", 			code.get_spell_name_by_name("Temporal Shield"), code.get_spell_name_by_name("Temporal Shield"),
-		"MAGE", 			code.get_spell_name_by_name("Blazing Barrier"), code.get_spell_name_by_name("Blazing Barrier"),
-		"MAGE", 			code.get_spell_name_by_name("Prismatic Barrier"), code.get_spell_name_by_name("Prismatic Barrier"),
-		"MONK", 			code.get_spell_name_by_name("Fortifying Brew"), code.get_spell_name_by_name("Fortifying Brew"),
-		"PALADIN", 		code.get_spell_name_by_name("Ardent Defender"), code.get_spell_name_by_name("Ardent Defender"),
-		"PALADIN", 		code.get_spell_name_by_name("Divine Shield"), code.get_spell_name_by_name("Divine Shield"),
-		"PRIEST", 		code.get_spell_name_by_name("Power Word: Shield"), code.get_spell_name_by_name("Power Word: Barrier"),
-		"ROGUE", 		code.get_spell_name_by_name("Evasion"), 		code.get_spell_name_by_name("Evasion"),
+		-- Only TRUE absorb/barrier spells here. Reactive survival CDs already in Spell.ER.
+		-- Classes without AutoBarButtonShields in CLASS_BUTTON_MAP are excluded (DH, Hunter,
+		-- Rogue, Evoker, Druid, Monk) -- their ER button already covers their defensives.
+
+		-- Death Knight: AMS is a magic absorb bubble -- keep; Icebound Fortitude is in Spell.ER
+		"DEATHKNIGHT", code.get_spell_name_by_name("Anti-Magic Shell"), 	code.get_spell_name_by_name("Anti-Magic Shell"),
+
+		-- Mage: each spec gets one spec-specific barrier (no overlap with Spell.ER mage entries)
+		"MAGE", 			code.get_spell_name_by_name("Ice Barrier"), 		code.get_spell_name_by_name("Ice Barrier"),
+		"MAGE", 			code.get_spell_name_by_name("Temporal Shield"), 	code.get_spell_name_by_name("Temporal Shield"),
+		"MAGE", 			code.get_spell_name_by_name("Blazing Barrier"), 	code.get_spell_name_by_name("Blazing Barrier"),
+		"MAGE", 			code.get_spell_name_by_name("Prismatic Barrier"), 	code.get_spell_name_by_name("Prismatic Barrier"),
+
+		-- Paladin: group-target absorbs (BoP, BoSpellwarding) -- Ardent Defender/Divine Shield are in Spell.ER
+		"PALADIN", 		code.get_spell_name_by_name("Blessing of Protection"), 	code.get_spell_name_by_name("Blessing of Protection"),
+		"PALADIN", 		code.get_spell_name_by_name("Blessing of Spellwarding"),	code.get_spell_name_by_name("Blessing of Spellwarding"),
+
+		-- Priest: PW:S and PW:Barrier are true absorb spells
+		"PRIEST", 		code.get_spell_name_by_name("Power Word: Shield"), 	code.get_spell_name_by_name("Power Word: Barrier"),
+
+		-- Shaman: persistent active shields that need to be kept up (not reactive CDs)
 		"SHAMAN", 		code.get_spell_name_by_name("Lightning Shield"),		code.get_spell_name_by_name("Earth Shield"),
-		"SHAMAN", 		code.get_spell_name_by_name("Earth Shield"),		code.get_spell_name_by_name("Lightning Shield"),
-		"SHAMAN", 		code.get_spell_name_by_name("Water Shield"),		code.get_spell_name_by_name("Water Shield"),
-		"WARLOCK", 		code.get_spell_name_by_name("Unending Resolve"), code.get_spell_name_by_name("Unending Resolve"),
-		"WARRIOR", 		code.get_spell_name_by_name("Shield Block"), code.get_spell_name_by_name("Shield Wall"),
-		"WARRIOR", 		code.get_spell_name_by_name("Shield Wall"), code.get_spell_name_by_name("Shield Block"),
+		"SHAMAN", 		code.get_spell_name_by_name("Earth Shield"),			code.get_spell_name_by_name("Lightning Shield"),
+		"SHAMAN", 		code.get_spell_name_by_name("Water Shield"),			code.get_spell_name_by_name("Water Shield"),
+
+		-- Warrior: Shield Block is rotational active mitigation (not a CD) -- Shield Wall is in Spell.ER
+		"WARRIOR", 		code.get_spell_name_by_name("Shield Block"), 		code.get_spell_name_by_name("Shield Block"),
 	})
 
 	AutoBarCategoryList["Spell.Stance"] = SpellsCategory:new( "Spell.Stance", spellIconList["Defensive Stance"], {
@@ -815,33 +824,42 @@ function AB.InitializeCategories()
 
 	AutoBarCategoryList["Spell.ER"] = SpellsCategory:new( "Spell.ER", spellIconList["Charge"],
 	{
+		-- Death Knight
 		"DEATHKNIGHT", code.get_spell_name_by_name("Anti-Magic Shell"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Anti-Magic Zone"),
+		"DEATHKNIGHT", code.get_spell_name_by_name("Dancing Rune Weapon"),		-- Blood DK major CD (moved from Spell.Class.Pet)
 		"DEATHKNIGHT", code.get_spell_name_by_name("Icebound Fortitude"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Lichborne"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Vampiric Blood"),
 		"DEATHKNIGHT", code.get_spell_name_by_name("Rune Tap"),
+		-- Demon Hunter (Havoc/Vengeance + Midnight Devourer spec)
 		"DEMONHUNTER", code.get_spell_name_by_name("Vengeful Retreat"),
 		"DEMONHUNTER", code.get_spell_name_by_name("Blur"),
 		"DEMONHUNTER", code.get_spell_name_by_name("Darkness"),
 		"DEMONHUNTER", code.get_spell_name_by_name("Netherwalk"),
+		"DEMONHUNTER", code.get_spell_name_by_name("Void Metamorphosis"),		-- Midnight: Devourer spec cooldown (ID 1217607)
+		-- Druid
 		"DRUID", code.get_spell_name_by_name("Barkskin"),
 		"DRUID", code.get_spell_name_by_name("Survival Instincts"),
 		"DRUID", code.get_spell_name_by_name("Frenzied Regeneration"),
 		"DRUID", code.get_spell_name_by_name("Ironfur"),
+		-- Evoker
 		"EVOKER", code.get_spell_name_by_name("Obsidian Scales"),
 		"EVOKER", code.get_spell_name_by_name("Renewing Blaze"),
 		"EVOKER", code.get_spell_name_by_name("Emerald Blossom"),
 		"EVOKER", code.get_spell_name_by_name("Verdant Embrace"),
 		"EVOKER", code.get_spell_name_by_name("Time Dilation"),
 		"EVOKER", code.get_spell_name_by_name("Zephyr"),
+		-- Hunter
 		"HUNTER", code.get_spell_name_by_name("Aspect of the Turtle"),
 		"HUNTER", code.get_spell_name_by_name("Exhilaration"),
 		"HUNTER", code.get_spell_name_by_name("Feign Death"),
+		-- Mage
 		"MAGE", code.get_spell_name_by_name("Ice Block"),
 		"MAGE", code.get_spell_name_by_name("Alter Time"),
 		"MAGE", code.get_spell_name_by_name("Mirror Image"),
 		"MAGE", code.get_spell_name_by_name("Greater Invisibility"),
+		-- Monk
 		"MONK", code.get_spell_name_by_name("Touch of Karma"),
 		"MONK", code.get_spell_name_by_name("Diffuse Magic"),
 		"MONK", code.get_spell_name_by_name("Dampen Harm"),
@@ -849,26 +867,37 @@ function AB.InitializeCategories()
 		"MONK", code.get_spell_name_by_name("Fortifying Brew"),
 		"MONK", code.get_spell_name_by_name("Vivify"),
 		"MONK", code.get_spell_name_by_name("Expel Harm"),
+		-- Monk celestials are 3-min spec CDs (also listed in Spell.Class.Pet for summon context)
+		"MONK", code.get_spell_name_by_name("Invoke Xuen, the White Tiger"),
+		"MONK", code.get_spell_name_by_name("Invoke Niuzao, the Black Ox"),
+		"MONK", code.get_spell_name_by_name("Invoke Chi-Ji, the Red Crane"),
+		"MONK", code.get_spell_name_by_name("Invoke Yu'lon, the Jade Serpent"),
+		-- Paladin
 		"PALADIN", code.get_spell_name_by_name("Divine Shield"),
 		"PALADIN", code.get_spell_name_by_name("Blessing of Protection"),
 		"PALADIN", code.get_spell_name_by_name("Shield of Vengeance"),
 		"PALADIN", code.get_spell_name_by_name("Ardent Defender"),
 		"PALADIN", code.get_spell_name_by_name("Lay on Hands"),
+		-- Priest
 		"PRIEST", code.get_spell_name_by_name("Desperate Prayer"),
 		"PRIEST", code.get_spell_name_by_name("Dispersion"),
 		"PRIEST", code.get_spell_name_by_name("Fade"),
 		"PRIEST", code.get_spell_name_by_name("Guardian Spirit"),
 		"PRIEST", code.get_spell_name_by_name("Pain Suppression"),
+		-- Rogue
 		"ROGUE", code.get_spell_name_by_name("Cloak of Shadows"),
 		"ROGUE", code.get_spell_name_by_name("Evasion"),
 		"ROGUE", code.get_spell_name_by_name("Crimson Vial"),
 		"ROGUE", code.get_spell_name_by_name("Vanish"),
+		-- Shaman
 		"SHAMAN", code.get_spell_name_by_name("Astral Shift"),
 		"SHAMAN", code.get_spell_name_by_name("Ancestral Guidance"),
 		"SHAMAN", code.get_spell_name_by_name("Earth Elemental"),
 		"SHAMAN", code.get_spell_name_by_name("Reincarnation"),
+		-- Warlock
 		"WARLOCK", code.get_spell_name_by_name("Unending Resolve"),
 		"WARLOCK", code.get_spell_name_by_name("Dark Pact"),
+		-- Warrior
 		"WARRIOR", code.get_spell_name_by_name("Shield Wall"),
 		"WARRIOR", code.get_spell_name_by_name("Die by the Sword"),
 		"WARRIOR", code.get_spell_name_by_name("Last Stand"),
@@ -896,6 +925,17 @@ function AB.InitializeCategories()
 		"WARLOCK", code.get_spell_name_by_name("Command Demon"),
 		"WARRIOR", code.get_spell_name_by_name("Pummel"),
 	})
+
+	-- Midnight: Devourer Demon Hunter spec abilities (new spec added in Midnight expansion)
+	-- These are the signature offensive cooldowns NOT shared with Havoc/Vengeance
+	AutoBarCategoryList["Spell.DH.Devourer"] = SpellsCategory:new( "Spell.DH.Devourer", spellIconList["Void Metamorphosis"] or spellIconList["Blur"],
+	{
+		"DEMONHUNTER", code.get_spell_name_by_name("Void Metamorphosis"),		-- Major transformation CD (triggered at 50 Soul Fragments)
+		"DEMONHUNTER", code.get_spell_name_by_name("Collapsing Star"),			-- Burst finisher inside Void Metamorphosis
+		"DEMONHUNTER", code.get_spell_name_by_name("Void Ray"),					-- Core Fury spender (ranged channel)
+	})
+
+
 
 	AutoBarCategoryList["Spell.CatForm"] = SpellsCategory:new( "Spell.CatForm", spellIconList["Charge"],
 	{
@@ -934,6 +974,12 @@ function AB.InitializeCategories()
 	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] assist", "Ping_Wheel_Icon_Assist", L["Ping Assist"])
 	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] warning", "Ping_Wheel_Icon_Warning", L["Ping Warning"])
 	AutoBarCategoryList["Macro.Ping"]:AddMacroText("/ping [@target,exists] onmyway", "Ping_Wheel_Icon_OnMyWay", L["Ping On My Way"])
+
+	-- Player macro book (dynamically discovered at load/refresh time)
+	-- Account-wide macros (shared across all characters on the account)
+	AutoBarCategoryList["Macro.Player.Account"] = PlayerMacroCategory:new("Macro.Player.Account", 134400, "account")
+	-- Character-specific macros (only exist on this character)
+	AutoBarCategoryList["Macro.Player.Character"] = PlayerMacroCategory:new("Macro.Player.Character", 134400, "character")
 
 end
 

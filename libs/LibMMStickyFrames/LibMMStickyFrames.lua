@@ -56,22 +56,29 @@ lib.group = lib.group or false
 lib.registered = lib.registered or {}
 lib.insets = lib.insets or {}
 
-if _G.MainMenuBar then
-	lib.registered[_G.MainMenuBar] = true;
-	lib.insets[_G.MainMenuBar] = { 7, 0, 40, 0 }
-end
-if _G.MainActionBar then
-	lib.registered[_G.MainActionBar] = true;
-	lib.insets[_G.MainActionBar] = { 7, 0, 40, 0 }
-end
-lib.registered[_G.CharacterMicroButton] = true
-lib.registered[_G.ChatFrameMenuButton] = true
-lib.registered[_G.ChatFrame1] = true
--- Frame Insets
-lib.insets[_G.CharacterMicroButton] = { 3, 23, -181, 1 }
-lib.insets[_G.ChatFrameMenuButton] = { 3, 3, 3, -91 }
-lib.insets[_G.ChatFrame1] = { -2, -4, -2, -6, }
 -- Enabled Frames
+
+-- In non-Retail versions of WoW (Classic, WotLK, etc.), the UI does not have Edit Mode,
+-- so the Blizzard action bars stay at their default positions. We want to be able to snap to them.
+-- In Retail (Mainline), Edit Mode moves these frames, so registering them here causes ghost red boxes.
+if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+	if _G.MainMenuBar then
+		lib.registered[_G.MainMenuBar] = true;
+		lib.insets[_G.MainMenuBar] = { 7, 0, 40, 0 }
+	end
+	if _G.MainActionBar then
+		lib.registered[_G.MainActionBar] = true;
+		lib.insets[_G.MainActionBar] = { 7, 0, 40, 0 }
+	end
+	lib.registered[_G.CharacterMicroButton] = true
+	lib.registered[_G.ChatFrameMenuButton] = true
+	lib.registered[_G.ChatFrame1] = true
+	-- Frame Insets
+	lib.insets[_G.CharacterMicroButton] = { 3, 23, -181, 1 }
+	lib.insets[_G.ChatFrameMenuButton] = { 3, 3, 3, -91 }
+	lib.insets[_G.ChatFrame1] = { -2, -4, -2, -6, }
+end
+
 lib.enabled = lib.enabled or {}
 -- Hidden Frames
 lib.hidden = lib.hidden or {}

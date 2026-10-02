@@ -39,6 +39,7 @@
 	BINDING_NAME_AutoBarButtonHousing_X = L["AutoBarButtonHousing"]
 	BINDING_NAME_AutoBarButtonMiscFun_X = L["AutoBarButtonMiscFun"]
 	BINDING_NAME_AutoBarButtonGuildSpell_X = L["AutoBarButtonGuildSpell"]
+	BINDING_NAME_AutoBarButtonPlayerMacros_X = L["AutoBarButtonPlayerMacros"]
 	BINDING_NAME_AutoBarButtonSpeed_X = L["AutoBarButtonSpeed"]
 	BINDING_NAME_AutoBarButtonStance_X = L["AutoBarButtonStance"]
 	BINDING_NAME_AutoBarButtonStealth_X = L["AutoBarButtonStealth"]

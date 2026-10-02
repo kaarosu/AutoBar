@@ -153,6 +153,14 @@ AutoBarGlobalDataObject.TickScheduler =
 	OtherStickyFrames = {
 		"GridLayoutFrame",
 		"Grid2LayoutFrame",
+	}
+}
+
+-- Add Blizzard frames as snap targets ONLY in non-Retail versions. 
+-- In Retail, Edit Mode handles action bar positioning, and these frames 
+-- cause ghosting issues (large red boxes in center of screen) when moving AutoBar bars.
+if WOW_PROJECT_ID ~= WOW_PROJECT_MAINLINE then
+	local blizzFrames = {
 		"MicroMenu",
 		"MainActionBar",
 		"MultiBarBottomLeft",
@@ -164,7 +172,11 @@ AutoBarGlobalDataObject.TickScheduler =
 		"MultiBarLeft",
 		"MultiBarRight",
 	}
-}
+	for _, frameName in ipairs(blizzFrames) do
+		table.insert(tick.OtherStickyFrames, frameName)
+	end
+end
+
 
 
 

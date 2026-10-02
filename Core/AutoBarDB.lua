@@ -108,14 +108,16 @@ local BASIC_BUTTON_DATA = {
 	{button_name = "AutoBarButtonElixirBattle", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE},
 	{button_name = "AutoBarButtonElixirGuardian", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE},
 	{button_name = "AutoBarButtonElixirBoth", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_MAINLINE},
-	{button_name = "AutoBarButtonCrafting", barKey = "AutoBarClassBarBasic"},
-	{button_name = "AutoBarButtonCooking", barKey = "AutoBarClassBarBasic"},
+	{button_name = "AutoBarButtonCrafting", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
+	{button_name = "AutoBarButtonCooking", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonQuest", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonTrinket1", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonTrinket2", barKey = "AutoBarClassBarBasic"},
 	{button_name = "AutoBarButtonRacial", barKey = "AutoBarClassBarBasic", additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonGuildSpell", barKey = "AutoBarClassBarBasic", exclude_project_id = WOW_PROJECT_CLASSIC, additional_args = {arrangeOnUse = true} },
 	{button_name = "AutoBarButtonHousing", barKey = "AutoBarClassBarBasic", project_id = WOW_PROJECT_MAINLINE, additional_args = {arrangeOnUse = true} },
+	-- Player macros (account-wide + character-specific combined into one flyout)
+	{button_name = "AutoBarButtonPlayerMacros", barKey = "AutoBarClassBarBasic", project_id = WOW_PROJECT_MAINLINE, additional_args = {arrangeOnUse = true} },
 }
 
 
@@ -829,6 +831,14 @@ function AutoBar:InitializeDefaults()
 			}
 		elseif (AutoBarDB2.account.buttonList["AutoBarButtonRacial"].arrangeOnUse == nil) then
 			AutoBarDB2.account.buttonList["AutoBarButtonRacial"].arrangeOnUse = true
+		end
+
+		if (AutoBarDB2.account.buttonList["AutoBarButtonCrafting"] and AutoBarDB2.account.buttonList["AutoBarButtonCrafting"].arrangeOnUse == nil) then
+			AutoBarDB2.account.buttonList["AutoBarButtonCrafting"].arrangeOnUse = true
+		end
+
+		if (AutoBarDB2.account.buttonList["AutoBarButtonCooking"] and AutoBarDB2.account.buttonList["AutoBarButtonCooking"].arrangeOnUse == nil) then
+			AutoBarDB2.account.buttonList["AutoBarButtonCooking"].arrangeOnUse = true
 		end
 
 		if (not AutoBarDB2.account.buttonList["AutoBarButtonSunsongRanch"]) then

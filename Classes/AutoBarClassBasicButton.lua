@@ -200,13 +200,11 @@ function AutoBar.Class.BasicButton.TooltipShow(button)
 			button.UpdateTooltip = AutoBar.Class.BasicButton.TooltipShow
 --		end
 	elseif (buttonType == "macro") then
-		-- There is no accesible GameTooltip function for macros so make one with its name and the macro text
+		-- There is no accesible GameTooltip function for macros so make one with its name
 		local macroName = button:GetAttribute("macroName")
-		local macroBody = button:GetAttribute("macroBody")
 
-		if (macroName and macroBody) then
+		if (macroName) then
 			GameTooltip:AddLine(macroName, 0.2, 0.8, 0.8)
-			GameTooltip:AddLine(macroBody, 1, 1, 1, 1)
 			button.UpdateTooltip = AutoBar.Class.BasicButton.TooltipShow
 			GameTooltip:Show()
 		end
@@ -308,13 +306,15 @@ function AutoBar.Class.BasicButton:GetIconTexture(frame)
 			end
 		end
 	elseif (itemType == "macro") then
-		local macroIndex = frame:GetAttribute("macro")
-		if (macroIndex) then
-			_, texture = GetMacroInfo(macroIndex)
-		else
-			texture = frame.class.macroTexture or self.frame:GetAttribute("macro_icon")
+		local macroNameOrIndex = frame:GetAttribute("macro") or frame:GetAttribute("macroName")
+		if (macroNameOrIndex) then
+			_, texture = GetMacroInfo(macroNameOrIndex)
+		end
+		
+		if (not texture) then
+			texture = frame.class.macroTexture or frame:GetAttribute("macro_icon")
 			if (not texture) then
-				local macro_action = self.frame:GetAttribute("macro_action")
+				local macro_action = frame:GetAttribute("macro_action")
 				texture = get_texture_for_action(macro_action) or "Interface\\Icons\\INV_Misc_Gift_05"
 			end
 		end

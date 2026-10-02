@@ -196,6 +196,11 @@ code.cache_spell_data(204596, "Sigil of Flame");
 code.cache_spell_data(207684, "Sigil of Misery");
 code.cache_spell_data(202137, "Sigil of Silence");
 code.cache_spell_data(183752, "Disrupt");
+code.cache_spell_data(196555, "Netherwalk");
+-- Midnight: Devourer spec (new DH spec in Midnight expansion)
+code.cache_spell_data(1217607, "Void Metamorphosis");  -- Major CD / spec transformation
+code.cache_spell_data(473728,  "Void Ray");             -- Core Fury spender
+code.cache_spell_data(1227702, "Collapsing Star");      -- Burst finisher inside Void Metamorphosis
 --#endregion
 
 

@@ -213,6 +213,68 @@ local function ClearButtonAttributes(frame)
 	frame:SetAttribute("itemId", nil)
 end
 
+-- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
+local function UpdateIcon(button, texture)
+	AB.SetTextureOrAtlas(button.icon, texture)
+end
+
+-- Clicking on a popup changes the anchor button spell.  This updates the button state and records arrangeOnUse
+local function UpdateHandlers(frame)
+	local TooltipSet = frame:GetAttribute("TooltipSet")
+--print("UpdateHandlers", sourceButton, TooltipSet, frame.TooltipSet)
+	frame.TooltipSet = TooltipSet
+
+	local itemId
+	local buttonObj = frame.class
+	local buttonKey = buttonObj and buttonObj.buttonName
+	if not buttonKey then return end
+
+	local itemType = frame:GetAttribute("type")
+	local item_guid = frame:GetAttribute("AutoBarGUID")
+
+	if(item_guid) then
+		itemId = item_guid
+	elseif (itemType) then
+		if (itemType == "item") then
+			itemId = frame:GetAttribute("itemId")
+		elseif (itemType == "spell") then
+			-- Use "itemId" or fallback to "spell": per-button SetupAttributes overrides may replace the
+			-- spell attribute with a numeric ID (e.g. AutoBarButtonCrafting), but "itemId"
+			-- always holds the original sorted key (spell name) needed for SwapToFront.
+			itemId = frame:GetAttribute("itemId") or frame:GetAttribute("spell")
+		elseif (itemType == "toy") then
+			itemId = frame:GetAttribute("toy") or frame:GetAttribute("itemId")
+		elseif (itemType == "macro") then
+			itemId = frame:GetAttribute("macroId")
+		else
+			print("AutoBar UpdateHandlers can't handle:", itemType);
+		end
+	end
+
+	if not itemId then return end
+
+	local buttonData = AutoBar.char.buttonDataList[buttonKey]
+	if (not buttonData) then
+		buttonData = {}
+		AutoBar.char.buttonDataList[buttonKey] = buttonData
+	end
+
+	buttonData.arrangeOnUse = itemId
+	
+	if AutoBarSearch and AutoBarSearch.sorted then
+		AutoBarSearch.sorted:SetBest(buttonKey)
+	end
+
+	if buttonObj and not InCombatLockdown() then
+		buttonObj:SetupButton()
+		buttonObj:UpdateCooldown()
+		buttonObj:UpdateCount()
+		buttonObj:UpdateHotkeys()
+		buttonObj:UpdateIcon()
+		buttonObj:UpdateUsable()
+	end
+end
+
 -- Clone the popup into the anchorButton
 local function InsecurePopupButton_PreClick(self, button)
 	if InCombatLockdown() then return end
@@ -261,10 +323,13 @@ local function InsecurePopupButton_PostClick(self, button)
 	elseif (itemType == "spell") then
 		anchorButton:SetAttribute("spell", self:GetAttribute("spell"))
 	elseif (itemType == "macro") then
+		anchorButton:SetAttribute("macroId", self:GetAttribute("macroId"))
 		anchorButton:SetAttribute("macro", self:GetAttribute("macro"))
 		anchorButton:SetAttribute("macrotext", self:GetAttribute("macrotext"))
 		anchorButton:SetAttribute("macroName", self:GetAttribute("macroName"))
 		anchorButton:SetAttribute("macroBody", self:GetAttribute("macroBody"))
+		anchorButton:SetAttribute("macro_action", self:GetAttribute("macro_action"))
+		anchorButton:SetAttribute("macro_icon", self:GetAttribute("macro_icon"))
 	end
 
 	-- Move the right click attributes
@@ -293,60 +358,24 @@ local function InsecurePopupButton_PostClick(self, button)
 	-- Arrange on Use source popup button
 	anchorButton:SetAttribute("sourceButton", self)
 
+	-- Direct call to UpdateHandlers to guarantee arrangeOnUse persistence
+	-- without relying on fragile OnAttributeChanged hooks
+	UpdateHandlers(anchorButton)
+
+	local iconTexture = self:GetAttribute("icon")
+	if iconTexture and anchorButton.icon then
+		AB.SetTextureOrAtlas(anchorButton.icon, iconTexture)
+	end
+
 	local savedType = self:GetAttribute("abSavedType")
 	if savedType then
 		self:SetAttribute("type", savedType)
 		self:SetAttribute("abSavedType", nil)
 	end
 	
-	local popupHeader = self.popupHeader
 	if popupHeader then
 		popupHeader:Hide()
 	end
-end
-
--- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
-local function UpdateIcon(button, texture)
-	AB.SetTextureOrAtlas(button.icon, texture)
-end
-
--- Clicking on a popup changes the anchor button spell.  This updates the icon texture to match
-local function UpdateHandlers(frame)
-	local TooltipSet = frame:GetAttribute("TooltipSet")
---print("UpdateHandlers", sourceButton, TooltipSet, frame.TooltipSet)
-	frame.TooltipSet = TooltipSet
-
-	local itemId
-	local buttonKey = frame.class.buttonName
-	local itemType = frame:GetAttribute("type")
-	local item_guid = frame:GetAttribute("AutoBarGUID")
-
-	if(item_guid) then
-		itemId = item_guid
-	elseif (itemType) then
-		if (itemType == "item") then
-			itemId = frame:GetAttribute("itemId")
-		elseif (itemType == "spell") then
-			-- Use "itemId" not "spell": per-button SetupAttributes overrides may replace the
-			-- spell attribute with a numeric ID (e.g. AutoBarButtonCrafting), but "itemId"
-			-- always holds the original sorted key (spell name) needed for SwapToFront.
-			itemId = frame:GetAttribute("itemId")
-		elseif (itemType == "toy") then
-			itemId = frame:GetAttribute("toy") or frame:GetAttribute("itemId")
-		elseif (itemType == "macro") then
-			itemId = frame:GetAttribute("macroId")
-		else
-			print("AutoBar UpdateHandlers can't handle:", itemType);
-		end
-	end
-
-	local buttonData = AutoBar.char.buttonDataList[buttonKey]
-	if (not buttonData) then
-		buttonData = {}
-		AutoBar.char.buttonDataList[buttonKey] = buttonData
-	end
-
-	buttonData.arrangeOnUse = itemId
 end
 
 
@@ -556,20 +585,13 @@ function AutoBarButton:SetupPopups(nItems)
 		local popupButton = AutoBar.Class.PopupButton:GetPopupButton(self, popupButtonIndex, popupHeader, popupKeyHandler)
 		local popupButtonFrame = popupButton.frame
 
-		-- Wrap OnClick/PostClick with the Arrange on use code
-		local wrapped = popupButtonFrame.snippetOnClick
-		
 		-- Always clear the broken secure handler attribute from older versions
 		popupButtonFrame:SetAttribute("_onclick", nil)
 		
-		if (wrapped and (not arrangeOnUse)) then
-			popupButtonFrame.snippetOnClick = nil
-			popupButtonFrame.snippetPostClick = nil
-		elseif ((not wrapped) and arrangeOnUse) then
+		if not popupButtonFrame.hasArrangeHooks then
 			popupButtonFrame:HookScript("PreClick", InsecurePopupButton_PreClick)
 			popupButtonFrame:HookScript("PostClick", InsecurePopupButton_PostClick)
-			popupButtonFrame.snippetOnClick = true
-			popupButtonFrame.snippetPostClick = true
+			popupButtonFrame.hasArrangeHooks = true
 		end
 
 		-- Attach to edge of previous popupButtonFrame or the popupHeader
@@ -987,19 +1009,32 @@ function AutoBarButton:SetupAttributes(button, bag, slot, spell, macroId, p_type
 			local macroInfo = AutoBarSearch.registered_macros[macroId]
 			frame:SetAttribute("type", "macro")
 			frame:SetAttribute("macroId", macroId)
-			if (macroInfo.macroIndex) then
-				frame:SetAttribute("macro", macroInfo.macroIndex)
+			-- print("AB Debug: SetupAttributes macroId=" .. tostring(macroId) .. ", macroName=" .. tostring(macroInfo and macroInfo.macroName))
+			if (macroInfo) then
+				if (macroInfo.macroText and macroInfo.macroText ~= "") then
+					frame:SetAttribute("macrotext", macroInfo.macroText)
+					frame:SetAttribute("macroBody", macroInfo.macroText)
+				elseif (macroInfo.macroName) then
+					frame:SetAttribute("macro", macroInfo.macroName)
+				elseif (macroInfo.macroIndex) then
+					frame:SetAttribute("macro", macroInfo.macroIndex)
+				end
+				
+				if (macroInfo.macroName) then
+					frame:SetAttribute("macroName", macroInfo.macroName)
+					if not frame:GetAttribute("macroBody") then
+						frame:SetAttribute("macroBody", " ")
+					end
+				end
 				button.macroActive = true
-			else
-				frame:SetAttribute("macrotext", macroInfo.macroText)
-				button.macroActive = true
-				frame:SetAttribute("macroName", macroInfo.macroName)
-				frame:SetAttribute("macroBody", macroInfo.macroText)
 
-				frame:SetAttribute("macro_action", macroInfo.macro_action)
-				--frame:SetAttribute("macro_tooltip", macroInfo.macro_tooltip)
-				frame:SetAttribute("itemLink", macroInfo.macro_tooltip)
-				frame:SetAttribute("macro_icon", macroInfo.macro_icon)
+				if (macroInfo.macro_action) then
+					frame:SetAttribute("macro_action", macroInfo.macro_action)
+					frame:SetAttribute("itemLink", macroInfo.macro_tooltip)
+					frame:SetAttribute("macro_icon", macroInfo.macro_icon)
+				end
+			else
+				-- print("AB Debug: macroInfo was nil for macroId=" .. tostring(macroId))
 			end
 		elseif (spell) then
 			-- Default spell to cast
@@ -1238,8 +1273,22 @@ end
 --end
 
 
+-- AutoBarButtonPlayerMacros
+-- Displays all of the player's macros (account-wide + character-specific) in one button.
+-- Account macros appear first in the flyout, then character-specific macros.
+local AutoBarButtonPlayerMacros = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonPlayerMacros"] = AutoBarButtonPlayerMacros
+
+function AutoBarButtonPlayerMacros:init(parentBar, buttonDB)
+	AutoBarButtonPlayerMacros.super.init(self, parentBar, buttonDB)
+	self:AddCategory("Macro.Player.Account")
+	self:AddCategory("Macro.Player.Character")
+end
+
+
 local AutoBarButtonAspect = Class(AutoBarButton)
 AutoBar.Class["AutoBarButtonAspect"] = AutoBarButtonAspect
+
 
 function AutoBarButtonAspect:init(parentBar, buttonDB)
 	AutoBarButtonAspect.super.init(self, parentBar, buttonDB)
@@ -1458,7 +1507,7 @@ function AutoBarButtonOpenable:init(parentBar, buttonDB)
 
 	self:AddCategory("Muffin.Misc.Openable")
 
-	if(buttonDB.openable_include_craft_knowledge == nil) then buttonDB.openable_include_craft_knowledge = true end
+	if(buttonDB.openable_include_craft_knowledge == nil) then buttonDB.openable_include_craft_knowledge = false end
 
 
 	if (AutoBarCategoryList["Muffin.Misc.CraftingKnowledge"] and buttonDB.openable_include_craft_knowledge) then
@@ -1479,6 +1528,10 @@ AutoBar.Class["AutoBarButtonCrafting"] = AutoBarButtonCrafting
 
 function AutoBarButtonCrafting:init(parentBar, buttonDB)
 	AutoBarButtonCrafting.super.init(self, parentBar, buttonDB)
+
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
 
 	self:AddCategory("Spell.Crafting")
 end
@@ -1545,6 +1598,10 @@ AutoBar.Class["AutoBarButtonCooking"] = AutoBarButtonCooking
 
 function AutoBarButtonCooking:init(parentBar, buttonDB)
 	AutoBarButtonCooking.super.init(self, parentBar, buttonDB)
+
+	if (self.buttonDB.arrangeOnUse == nil) then
+		self.buttonDB.arrangeOnUse = true
+	end
 
 	self:AddCategory("Spell.Cooking")
 end
@@ -1676,6 +1733,19 @@ function AutoBarButtonInterrupt:init(parentBar, buttonDB)
 
 	self:AddCategory("Spell.Interrupt")
 
+end
+
+-- Midnight: Devourer Demon Hunter spec button
+-- Shows Void Metamorphosis, Collapsing Star, and Void Ray
+local AutoBarButtonDevourer = Class(AutoBarButton)
+AutoBar.Class["AutoBarButtonDevourer"] = AutoBarButtonDevourer
+
+function AutoBarButtonDevourer:init(parentBar, buttonDB)
+	AutoBarButtonDevourer.super.init(self, parentBar, buttonDB)
+
+	if (ABGData.is_mainline_wow) then
+		self:AddCategory("Spell.DH.Devourer")
+	end
 end
 
 local AutoBarButtonTravel = Class(AutoBarButton)

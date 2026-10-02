@@ -206,6 +206,7 @@ function AutoBar:InitializeZero()
 	AutoBar.frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
 	AutoBar.frame:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 	AutoBar.frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+	AutoBar.frame:RegisterEvent("UPDATE_MACROS")
 
 	AB.LibKeyBound.RegisterCallback(self, "LIBKEYBOUND_ENABLED")
 	AB.LibKeyBound.RegisterCallback(self, "LIBKEYBOUND_DISABLED")
@@ -291,6 +292,12 @@ function AB.events.TOYS_UPDATED(p_item_id, p_new)
 
 	AB.LogEventEnd("TOYS_UPDATED", p_item_id, p_new)
 
+end
+
+function AB.events.UPDATE_MACROS()
+	AB.LogEventStart("UPDATE_MACROS")
+	AB.ABScheduleUpdate(tick.UpdateCategoriesID)
+	AB.LogEventEnd("UPDATE_MACROS")
 end
 
 
